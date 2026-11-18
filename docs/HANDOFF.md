@@ -16,3 +16,11 @@
 
 
 Обновление подготовки сервера: `factory/resources.py` учитывает cgroup v2/affinity/доступную память, `render.py` кэширует неизменяемые маски и ускоряет поиск субтитров без смены кодирования. Бесплатный before/after 1080p: ~5% по медиане куска, декодированные кадры идентичны. 65 тестов. Добавлены `deploy.py`, `.env.example`, `DEPLOY.md`, контейнер без root, ротация логов, init и постоянные тома. Docker на этом Mac отсутствует; реальная сборка на VPS ещё не проверена. Релизы в `releases/` не содержат приватной истории или ключей.
+
+## Сервер (19.11.2026)
+- VPS hoster.kz, Ubuntu 24.04, 1 vCPU / 1 ГБ RAM + 2 ГБ swap. На нём же работают ai-studio.kz и threads.ai-studio.kz (nginx).
+- Приложение: `/opt/reels` (git clone этого репозитория), без Docker; службы `reels-web`, `reels-worker`
+  (пониженный приоритет, потолок памяти), nginx-сайт `reels.ai-studio.kz` → 127.0.0.1:8000.
+- HTTPS: `/usr/local/bin/reels-cert.sh` из cron каждые 10 мин — получит сертификат, когда появится A-запись.
+- Обновление: `bash /opt/reels/deploy/install-vps.sh reels.ai-studio.kz <email>`.
+- Доступы — только в локальном `.env.local` (не в git).
