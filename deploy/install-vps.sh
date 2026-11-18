@@ -38,9 +38,10 @@ ln -sf "/etc/nginx/sites-available/$DOMAIN.conf" "/etc/nginx/sites-enabled/$DOMA
 nginx -t
 systemctl reload nginx
 
-if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
-    if [ -n "$EMAIL" ]; then CONTACT=(-m "$EMAIL"); else CONTACT=(--register-unsafely-without-email); fi
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --redirect "${CONTACT[@]}"
-fi
+# HTTPS: сразу, если DNS уже указывает сюда; иначе cron пробует каждые 10 минут
+install -m 755 deploy/reels-cert.sh /usr/local/bin/reels-cert.sh
+echo "*/10 * * * * root /usr/local/bin/reels-cert.sh $DOMAIN $EMAIL" > /etc/cron.d/reels-cert
+/usr/local/bin/reels-cert.sh "$DOMAIN" "$EMAIL" || true
+[ -d "/etc/letsencrypt/live/$DOMAIN" ] && echo "HTTPS: есть" || echo "HTTPS: ждёт DNS-запись $DOMAIN -> IP сервера"
 systemctl status reels-web reels-worker --no-pager -n 3
 echo "Готово: https://$DOMAIN"
