@@ -10,7 +10,7 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
-from factory.config import ROOT, JOBS, CACHE
+from factory.config import ROOT, CACHE
 from factory.files import atomic_json
 from factory.store import JobStore, ACTIVE
 
@@ -43,11 +43,11 @@ def backup(destination: Path, root: Path = ROOT):
             "requirements-align.lock",
             "Dockerfile",
             "docker-compose.yml",
-            "compose.https.yml",
-            "Caddyfile",
+            "deploy/compose.https.yml",
+            "deploy/Caddyfile",
             "README.md",
-            "HANDOFF.md",
-            "DEPLOY.md",
+            "docs/HANDOFF.md",
+            "docs/DEPLOY.md",
             "deploy.py",
             ".env.example",
             ".env",

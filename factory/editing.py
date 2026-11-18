@@ -4,7 +4,7 @@ import json
 import re
 from pathlib import Path
 from .files import atomic_json
-from .validation import InvalidRequest, number, text
+from .validation import InvalidRequest, text
 
 
 def load_script(directory: Path):

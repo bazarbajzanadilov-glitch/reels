@@ -1,4 +1,4 @@
-# docker compose -f docker-compose.yml -f compose.https.yml up -d --build
+# docker compose -f docker-compose.yml -f deploy/compose.https.yml up -d --build
 services:
   shorts-factory:
     environment:
@@ -15,7 +15,7 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

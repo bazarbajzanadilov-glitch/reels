@@ -1,0 +1,27 @@
+[Unit]
+Description=Reels (Shorts Factory) — worker (генерация и монтаж)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=reels
+Group=reels
+WorkingDirectory=/opt/reels
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/reels/.venv/bin/python worker.py
+Restart=always
+RestartSec=5
+TimeoutStopSec=600
+KillMode=mixed
+# монтаж тяжёлый: ниже приоритет и потолок памяти, чтобы не задеть другие сайты
+Nice=10
+CPUWeight=40
+IOWeight=40
+MemoryHigh=550M
+MemoryMax=800M
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/opt/reels/jobs /opt/reels/cache /opt/reels/.models /opt/reels/backups
+
+[Install]
+WantedBy=multi-user.target

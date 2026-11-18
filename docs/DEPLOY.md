@@ -43,7 +43,7 @@ docker compose ps
 Направить DNS домена на сервер, разрешить 80/443, заполнить DOMAIN, затем:
 
 ```sh
-docker compose -f docker-compose.yml -f compose.https.yml up -d --build
+docker compose -f docker-compose.yml -f deploy/compose.https.yml up -d --build
 ```
 
 Caddy получает сертификат. Не открывать порт 8000 наружу. Логи ограничены по размеру. Приложение работает без root; init собирает завершённые дочерние процессы FFmpeg.
@@ -55,3 +55,19 @@ Caddy получает сертификат. Не открывать порт 80
 Рендер автоматически учитывает CPU-квоту и доступную память Linux/cgroup v2. RENDER_WORKERS задаёт верхний предел, а не отменяет защиту памяти. Сетевые лимиты менять постепенно: увеличение параллельности не гарантирует ускорение API. Настройки качества: исходные 1080p, 30 fps, x264 veryfast CRF 19, AAC 160k сохранены.
 
 Docker-сборку и HTTPS необходимо проверить на самом сервере: на текущем Mac Docker отсутствует. Платную генерацию проверять только по отдельному разрешению владельца.
+
+## VPS без Docker (рабочий вариант для reels.ai-studio.kz)
+
+Сервер с nginx на 80/443 и другими сайтами — приложение ставится рядом, не мешая им:
+
+```sh
+git clone https://github.com/bazarbajzanadilov-glitch/reels.git /opt/reels
+cp /opt/reels/.env.example /opt/reels/.env   # заполнить POLLINATIONS_KEY, ACCESS_PASSWORD, DOMAIN
+bash /opt/reels/deploy/install-vps.sh reels.ai-studio.kz admin@example.com
+```
+
+Скрипт ставит ffmpeg и Python-окружение, systemd-службы `reels-web` и `reels-worker` (пониженный приоритет
+и потолок памяти), сайт nginx `deploy/nginx/` и HTTPS через certbot. Обновление — тот же скрипт:
+он делает `git pull`, обновляет зависимости и перезапускает службы.
+
+Логи: `journalctl -u reels-web -u reels-worker -f`.

@@ -1,0 +1,28 @@
+[Unit]
+Description=Reels (Shorts Factory) — web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=reels
+Group=reels
+WorkingDirectory=/opt/reels
+Environment=PYTHONUNBUFFERED=1
+Environment=HOST=127.0.0.1
+Environment=PORT=8000
+Environment=BEHIND_PROXY=1
+Environment=START_WORKER=0
+ExecStart=/opt/reels/.venv/bin/python server.py
+Restart=always
+RestartSec=3
+# сайт не должен мешать другим сервисам на этом сервере
+Nice=5
+CPUWeight=60
+MemoryHigh=250M
+MemoryMax=400M
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/opt/reels/jobs /opt/reels/cache /opt/reels/.models /opt/reels/backups
+
+[Install]
+WantedBy=multi-user.target

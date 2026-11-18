@@ -85,8 +85,7 @@ def package(destination):
         "deploy.py",
         "Dockerfile",
         "docker-compose.yml",
-        "compose.https.yml",
-        "Caddyfile",
+        "deploy",
         "requirements.txt",
         "requirements.lock",
         "requirements-align.txt",
@@ -94,7 +93,7 @@ def package(destination):
         ".env.example",
         ".dockerignore",
         "README.md",
-        "DEPLOY.md",
+        "docs/DEPLOY.md",
     )
     files = []
     for name in names:
