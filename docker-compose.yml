@@ -1,0 +1,52 @@
+services:
+  shorts-factory:
+    build:
+      context: .
+      args:
+        APP_UID: ${APP_UID:-10001}
+        APP_GID: ${APP_GID:-10001}
+    restart: unless-stopped
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      START_WORKER: "0"
+      HOST: 0.0.0.0
+      BEHIND_PROXY: "1"
+      ACCESS_PASSWORD: ${ACCESS_PASSWORD:?Set ACCESS_PASSWORD in .env}
+    env_file: .env          # POLLINATIONS_KEY и ACCESS_PASSWORD
+    volumes:
+      - ./jobs:/app/jobs    # готовые ролики и история
+      - ./cache:/app/cache  # кэш, чтобы не платить дважды
+
+  worker:
+    build:
+      context: .
+      args:
+        APP_UID: ${APP_UID:-10001}
+        APP_GID: ${APP_GID:-10001}
+    restart: unless-stopped
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["python", "worker.py"]
+    stop_grace_period: 10m
+    healthcheck:
+      test: ["CMD", "python", "-c", "from factory.store import JobStore; from factory.config import JOBS; raise SystemExit(0 if JobStore(JOBS).healthy() else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+    env_file: .env
+    volumes:
+      - ./jobs:/app/jobs
+      - ./cache:/app/cache
+      - ./.models:/app/.models
+      - ./backups:/app/backups

@@ -1,0 +1,2 @@
+# Optional local speech timing; install explicitly, separate from the lightweight server.
+openai-whisper

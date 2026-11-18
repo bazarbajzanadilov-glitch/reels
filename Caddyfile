@@ -1,0 +1,3 @@
+{$DOMAIN} {
+    reverse_proxy shorts-factory:8000
+}

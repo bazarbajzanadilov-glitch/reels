@@ -1,0 +1,25 @@
+# docker compose -f docker-compose.yml -f compose.https.yml up -d --build
+services:
+  shorts-factory:
+    environment:
+      HOST: 0.0.0.0
+      BEHIND_PROXY: "1"
+      ACCESS_PASSWORD: ${ACCESS_PASSWORD:?Set ACCESS_PASSWORD in .env}
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set your domain in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - shorts-factory
+volumes:
+  caddy_data:
+  caddy_config:
