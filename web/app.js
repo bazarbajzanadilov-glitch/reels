@@ -10,24 +10,11 @@ let OPT = null;
 const mins = () => +$("#minutes").value;
 const FLAGS = {ru: "🇷🇺", kk: "🇰🇿", en: "🇬🇧", de: "🇩🇪"};
 const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
-const STYLE_NOTES = {"2d": "плоская векторная графика", "3d": "объём, как у Pixar", anime: "японская анимация",
-  real: "как настоящее фото", comic: "чёткие контуры", watercolor: "мягкие краски",
-  clay: "пластилиновые герои", pixel: "ретро-игры", noir: "чёрно-белое кино",
-  paper: "аппликация из бумаги", custom: "опишите сами"};
 
 const copyText = async text => {
   try { await navigator.clipboard.writeText(text); return true; }
   catch { const t=document.createElement("textarea"); t.value=text; t.style.cssText="position:fixed;opacity:0"; document.body.append(t); t.select(); const ok=document.execCommand("copy"); t.remove(); return ok; }
 };
-
-// журнал: короткие строки о том, что происходит
-function journal(text) {
-  const list = $("#log"); if (!list) return;
-  const time = new Date().toLocaleTimeString("ru-RU", {hour: "2-digit", minute: "2-digit", second: "2-digit"});
-  if (list.firstElementChild?.dataset.text === text) return;
-  list.insertAdjacentHTML("afterbegin", `<li data-text="${esc(text)}"><time>${time}</time>${esc(text)}</li>`);
-  while (list.children.length > 8) list.lastElementChild.remove();
-}
 
 function setMins(m) {
   m = Math.min(15, Math.max(1, Math.round(+m || 1)));
@@ -63,7 +50,7 @@ async function init() {
   opts("#langs", Object.keys(OPT.langs).map(k => [k, `${FLAGS[k] || ""} ${LANG_NAMES[k] || OPT.langs[k]}`]), "ru");
   opts("#genres", Object.entries(OPT.genres).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#tones", Object.entries(OPT.tones).map(([k, l]) => [k, labelOf(l)]), "auto");
-  opts("#styles", Object.entries(OPT.styles).map(([k, l]) => [k, `${labelOf(l).replace(" мультфильм", "")} — ${STYLE_NOTES[k] || ""}`]), "2d");
+  opts("#styles", Object.entries(OPT.styles).map(([k, l]) => [k, labelOf(l).replace(" мультфильм", "")]), "2d");
   opts("#vmodels", Object.entries(OPT.video_models).map(([k, v]) => [k, `${v.label} · ${money(v.price)} за сцену`]), "pvideo");
   opts("#narrators", Object.entries(OPT.narrators).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#endings", Object.entries(OPT.endings).map(([k, l]) => [k, labelOf(l)]), "auto");
@@ -81,21 +68,18 @@ async function init() {
   }
   $("#clips-reset").onclick = () => { clipsTouched = false; estimate(); };
   $("#minutes").oninput = () => { clearTimeout(priceTimer); priceTimer = setTimeout(() => setMins($("#minutes").value), 250); };
-  $("#morebtn").onclick = () => { const o = $("#extra").classList.toggle("open");
-    $("#morebtn").setAttribute("aria-expanded", String(o));
-    $("#morebtn").textContent = o ? "Скрыть настройки сюжета ▴" : "Ещё настройки сюжета ▾"; };
   voices();
   document.querySelectorAll(".panel input[type=radio], .panel select[name]").forEach(i => i.addEventListener("change", () => {
     if (["provider", "gender", "lang"].includes(i.name)) stopAudio();
     if (i.name === "provider" || i.name === "gender") voices();
     estimate(); }));
   restorePreferences();
+  setupChoiceButtons();
   setMins(mins());
   setupStudio();
   setupCustomChoices();
   setupPreciseRanges();
   $("#go").disabled = false;
-  journal("Студия готова к работе");
   await estimate();
 }
 
@@ -131,7 +115,6 @@ async function estimate() {
     const parts = r.parts || {}, detail = {"картинки": `${r.scenes} кадров`, "анимация": `${r.clips || 0} сцен`, "голос": $("#voice").value};
     $("#plan").innerHTML = Object.entries(parts).map(([k, v]) =>
       `<li><span>${esc(k[0].toUpperCase() + k.slice(1))}${detail[k] ? `<small>${esc(detail[k])}</small>` : ""}</span><b>${money(v)}</b></li>`).join("");
-    journal(`Расчёт: ${mins()} мин · ${r.scenes} сцен · ${r.clips || 0} с анимацией · ≈ ${money(r.total)}`);
     showClips(r);
     $("#note").textContent = "Списывается по факту";
   } catch (error) {
@@ -176,7 +159,6 @@ async function playVoice(name, button, restart = false) {
   const same = audioButton === button;
   stopAudio();
   if (same && !restart) return;
-  journal(`Проба голоса: ${name}`);
   audioButton = button;
   button.classList.add("busy", "playing");
   const sample = audio = new Audio(`/voices/${val("provider")}/${name}_${val("lang")}.mp3`);
@@ -259,15 +241,14 @@ async function create() {
     if (!response.ok && !r.error) r={error:"Не удалось создать ролик"};
   } catch { r={error:"Нет связи с сервером. Повторная отправка сохранит ту же задачу."}; }
   $("#go").disabled = false;
-  if (r.error) { $("#err").textContent = r.error; journal("Ошибка: " + r.error); return; }
-  journal(`Задача создана: «${topic}»`);
+  if (r.error) { $("#err").textContent = r.error; $("#err").scrollIntoView({block:"center",behavior:"smooth"}); return; }
   creationKey.pending=null;
   try { sessionStorage.removeItem("factory.pending"); } catch {}
   $("#topic").value = ""; $("#notes").value = ""; $("#refrm").click(); $("#scene-rm").click(); await load(); showProgress(r.id);
 }
 $("#go").onclick = create;
 $("#topic").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); create(); } };
-document.querySelectorAll(".idea").forEach(b => b.onclick = () => { $("#topic").value = b.textContent; $("#topic").focus(); });
+document.querySelectorAll(".idea").forEach(b => b.onclick = () => { const rail=b.parentElement; if(rail.scrollWidth>rail.clientWidth) rail.scrollTo({left:rail.scrollLeft+b.getBoundingClientRect().left-rail.getBoundingClientRect().left,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"}); $("#topic").value = b.textContent; $("#topic").focus({preventScroll:true}); });
 
 // грубый процент готовности по этапу
 function pct(p = "") {
@@ -290,14 +271,8 @@ async function load() {
   const r = await fetch("/api/jobs").then(r => r.json()).catch(() => null);
   loadingJobs = false;
   if (!Array.isArray(r)) return;
-  for (const j of r) {
-    const old = jobs.find(x => x.id === j.id);
-    if (old && (old.status !== j.status || old.progress !== j.progress) && !j.deleted_at)
-      journal(`«${j.title || j.topic}»: ${STATUS_LABELS[j.status] || j.status}${j.status === "running" && j.progress ? " · " + j.progress : ""}`);
-  }
   jobs = r;
   renderHistory();
-  updateDock();
   if (typeof refreshProgress === "function") refreshProgress();
 }
 let historyVisible=48;
@@ -424,37 +399,17 @@ $("#copy-cover").onclick=async()=>{ try { const image=$("#cover-preview"), canva
 
 $("#voice-speed").oninput=()=>$("#voice-speed-value").textContent=(+$("#voice-speed").value).toFixed(2)+"×";
 
-let activeWorktab="create", dockJob=null, dockScript=null;
-async function updateDock() {
-  const j=jobs.find(x=>!x.deleted_at && x.status==="draft") || jobs.find(x=>!x.deleted_at && ["running","queued"].includes(x.status));
-  const p=j?.status==="draft"?100:j?pct(j.progress):0;
-  $("#live-percent").textContent=Math.round(p)+"%"; $("#live-bar").style.width=p+"%";
-  $("#live-stage").textContent=j?.progress||"Ожидание запуска";
-  if (!j || j.status!=="draft" || dockJob===j.id) return;
-  try {
-    const response=await fetch(`/api/jobs/${j.id}/script`); if(!response.ok) return;
-    dockScript=await response.json(); dockJob=j.id;
-    $("#dock-count").textContent=`${dockScript.scenes.length} сцен`;
-    $("#dock-scenes").innerHTML=dockScript.scenes.map((s,i)=>`<label class="dock-scene"><b>Сцена ${i+1}</b><textarea data-dock-scene="${i}" maxlength="1200">${esc(s.text)}</textarea></label>`).join("")+`<div class="btns"><button type="button" class="btn" id="dock-save">Сохранить</button><button type="button" class="btn main" id="dock-render">Собрать видео</button></div><p id="dock-status" role="status"></p>`;
-    for (const action of ["save","render"]) $(`#dock-${action}`).onclick=async()=>{
-      const scenes=dockScript.scenes.map((s,i)=>({...s,text:document.querySelector(`[data-dock-scene="${i}"]`).value}));
-      try { await postJob(j.id,action==="save"?"script":"render",{title:dockScript.title,scenes}); $("#dock-status").textContent=action==="save"?"Сохранено":"Сборка поставлена в очередь"; if(action==="render") dockJob=null; await load(); }
-      catch(error){ $("#dock-status").textContent=error.message; }
-    };
-  } catch {}
-}
 document.querySelectorAll("[data-worktab]").forEach(button=>button.onclick=()=>{
   document.querySelectorAll("[data-worktab]").forEach(x=>{x.classList.toggle("active",x===button); if(x===button) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current");});
-  const target=activeWorktab=button.dataset.worktab;
+  const target=button.dataset.worktab;
   $("#progress-page").hidden=true;
   $("#project-history").hidden=target!=="history";
   $("#create").hidden=target==="history";
   $(".modes").hidden=target!=="create";
+  $("#mode-heading").hidden=target!=="create";
   $("#video-workspace").hidden=target!=="create";
   $("#music-workspace").hidden=target!=="music";
   $("#checkout").hidden=target==="music";
-  $("#checkout").classList.toggle("scenes-only",target==="scenes");
-  $("#scene-dock").classList.toggle("scene-tab",target==="scenes");
   window.scrollTo({top:0,behavior:"smooth"});
 });
 
@@ -487,17 +442,23 @@ $("#retry-go").onclick = async () => {
 
 function setupStudio() {
   const tabs=[...document.querySelectorAll('[data-project]')];
+  const rail=$('.modes');
+  const centerCard=card=>{ if (rail.scrollWidth<=rail.clientWidth) return; const left=rail.scrollLeft+card.getBoundingClientRect().left-rail.getBoundingClientRect().left; rail.scrollTo({left,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}); };
+  let carouselIndex=1;
+  const move=step=>{const middle=rail.getBoundingClientRect().left+rail.clientWidth/2; carouselIndex=tabs.reduce((best,item,i)=>Math.abs(item.getBoundingClientRect().left+item.offsetWidth/2-middle)<Math.abs(tabs[best].getBoundingClientRect().left+tabs[best].offsetWidth/2-middle)?i:best,0); carouselIndex=Math.max(0,Math.min(tabs.length-1,carouselIndex+step));centerCard(tabs[carouselIndex]);};
+  $('#mode-prev').onclick=()=>move(-1); $('#mode-next').onclick=()=>move(1);
+  rail.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();move(e.key==='ArrowRight'?1:-1);}});
   function choose(mode, change=true) {
     tabs.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.project===mode)));
     $('#project-history').hidden=true; $('#video-workspace').hidden=mode==='music'; $('#music-workspace').hidden=mode!=='music'; $('#checkout').hidden=mode==='music';
     if (mode==='music') return;
     if (change) { const input=$('#'+(mode==='none'?'a0':'a2')); input.checked=true; input.dispatchEvent(new Event('change',{bubbles:true})); }
     $('#animation-settings').hidden=mode==='none'; $('#clips-field').hidden=mode==='none'; $('.clips-hint').hidden=mode==='none';
-    journal(mode==='none'?'Режим: без анимации':'Режим: с анимацией');
   }
-  tabs.forEach(b=>b.onclick=()=>choose(b.dataset.project));
+  tabs.forEach(b=>b.onclick=()=>{choose(b.dataset.project);centerCard(b);});
   document.querySelectorAll('input[name=animate]').forEach(i=>i.addEventListener('change',()=>choose(val('animate')==='none'?'none':'animated',false)));
   choose(val('animate')==='none'?'none':'animated',val('animate')==='key');  // старое «ключевые» → число сцен
+  requestAnimationFrame(()=>centerCard(tabs.find(b=>b.getAttribute('aria-pressed')==='true')));
   const captionButtons=[...document.querySelectorAll('[data-caption]')];
   function syncCaptions(){captionButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.caption===$('#subtitle-mode').value)));}
   captionButtons.forEach(b=>b.onclick=()=>{ $('#subtitle-mode').value=b.dataset.caption; $('#subtitle-mode').dispatchEvent(new Event('change',{bubbles:true}));syncCaptions(); });
@@ -508,6 +469,42 @@ function setupCustomChoices() {
  const sync=()=>{ $('#custom-style-field').hidden=val('style')!=='custom'; $('#custom-genre-field').hidden=val('genre')!=='custom'; };
  document.querySelectorAll('[name=style],[name=genre]').forEach(input=>input.addEventListener('change',sync)); sync();
 }
+
+function syncChoiceButtons(select) {
+  const group=select.parentElement.querySelector(":scope > .choice-group");
+  if (!group) return;
+  group.querySelectorAll("button").forEach(button=>{
+    const option=[...select.options].find(o=>o.value===button.dataset.value);
+    button.setAttribute("aria-pressed",String(button.dataset.value===select.value));
+    button.disabled=!!option?.disabled;
+  });
+}
+function setupChoiceButtons() {
+  const ids=["langs","genres","tones","narrators","endings","audiences","styles","vmodels","providers","genders","subtitle-preset","subtitle-outline-mode","subtitle-timing"];
+  ids.forEach(id=>{
+    const select=document.getElementById(id); let container=select.parentElement;
+    if(container.tagName==="LABEL") { const div=document.createElement("div"); div.className=container.className; while(container.firstChild) div.append(container.firstChild); container.replaceWith(div); container=div; }
+    const label=container.querySelector("span")?.textContent || ({"subtitle-preset":"Палитра","subtitle-outline-mode":"Цвет обводки","subtitle-timing":"Синхронизация"})[id] || id;
+    const group=document.createElement("div"); group.className="choice-group"; group.setAttribute("role","group"); group.setAttribute("aria-label",label);
+    for(const option of select.options) {
+      const button=document.createElement("button"); button.type="button"; button.dataset.value=option.value; button.textContent=option.textContent;
+      button.onclick=()=>{ if(select.value===option.value) return; select.value=option.value; select.dispatchEvent(new Event("input",{bubbles:true})); select.dispatchEvent(new Event("change",{bubbles:true})); syncChoiceButtons(select); };
+      group.append(button);
+    }
+    select.hidden=true; select.insertAdjacentElement("afterend",group);
+    select.addEventListener("change",()=>syncChoiceButtons(select)); syncChoiceButtons(select);
+  });
+}
+
+function syncKeyboardPanel() {
+  const field=document.activeElement;
+  const editing=field && (field.matches('input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea') || field.isContentEditable);
+  const viewport=window.visualViewport;
+  document.body.classList.toggle("keyboard-open", !!(editing && viewport && window.innerHeight-viewport.height>120));
+}
+window.visualViewport?.addEventListener("resize",syncKeyboardPanel);
+document.addEventListener("focusin",syncKeyboardPanel);
+document.addEventListener("focusout",()=>setTimeout(syncKeyboardPanel,0));
 
 function setupPreciseRanges() {
   document.querySelectorAll(".subtitle-range input[type=range], #voice-speed").forEach(range=>{

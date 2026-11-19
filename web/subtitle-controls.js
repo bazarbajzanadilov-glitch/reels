@@ -12,6 +12,7 @@ function subtitleSettings() {
     timing:get("timing"), background:+get("background"), uppercase:$("#subtitle-uppercase").checked, show_captions:$("#subtitle-captions").checked};
 }
 function updateSubtitleControls() {
+  for (const id of ["subtitle-preset","subtitle-outline-mode","subtitle-timing"]) syncChoiceButtons($("#"+id));
   const settings = subtitleSettings();
   $("#subtitle-editor").hidden = settings.mode === "off";
   $("#subtitle-single").hidden = settings.mode !== "single";

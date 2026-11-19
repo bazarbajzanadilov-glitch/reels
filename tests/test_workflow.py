@@ -37,6 +37,15 @@ def script():
 
 
 class WorkflowTests(unittest.TestCase):
+    def test_extra_styles_are_selectable_with_safe_budget(self):
+        from factory.config import STYLES
+        from factory.validation import job_options
+        for style in ("cyberpunk", "gouache", "woodcut", "vhs", "stained_glass", "isometric"):
+            self.assertEqual(job_options({"topic": "Тест", "style": style})["style"], style)
+            self.assertTrue(STYLES[style]["prompt"])
+            self.assertTrue(STYLES[style]["motion"])
+            self.assertGreater(STYLES[style]["budget"][0], 0)
+
     def test_parallel_stage_progress_is_preserved(self):
         from factory.store import JobStore
         with tempfile.TemporaryDirectory() as directory:

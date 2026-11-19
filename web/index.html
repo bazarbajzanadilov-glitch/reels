@@ -24,17 +24,18 @@
 <header class="topbar">
   <div class="topbar-in">
     <a class="logo" href="#create" aria-label="Reels Studio — создание"><svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="3" width="34" height="34" rx="11"/><path d="M16 12.5v15l11-7.5z"/><path d="M11 10.5h5M24 29.5h5"/></svg><span>Reels Studio</span></a>
-    <nav class="topnav" aria-label="Разделы"><button type="button" class="active" data-worktab="create" aria-current="page"><i>1</i><span>Создание</span></button><button type="button" data-worktab="scenes"><i>2</i><span>Сцены</span></button><button type="button" data-worktab="history"><i>3</i><span>Мои ролики</span></button><button type="button" data-worktab="music"><i>4</i><span>Музыка</span></button></nav>
+    <nav class="topnav" aria-label="Разделы"><button type="button" class="active" data-worktab="create" aria-current="page"><span>Создание</span></button><button type="button" data-worktab="history"><span>Мои ролики</span></button><button type="button" data-worktab="music"><span>Музыка</span></button></nav>
     <div class="bal" id="bal" title="Баланс сервиса генерации">—</div>
   </div>
 </header>
 
 <main class="wrap">
   <section class="studio-page" id="create">
-    <nav class="modes" aria-label="Тип проекта">
-      <button type="button" class="mode" data-project="none" aria-pressed="false"><svg class="mode-art" viewBox="0 0 96 64" aria-hidden="true"><rect x="22" y="6" width="58" height="40" rx="6" class="a2"/><rect x="12" y="16" width="58" height="40" rx="6" class="a1"/><path d="m18 50 16-16 10 10 8-7 14 13" class="a3"/><circle cx="56" cy="27" r="4" class="a3"/></svg><span><b>Без анимации</b><small>Кадры с движением камеры · дешевле</small></span></button>
-      <button type="button" class="mode" data-project="animated" aria-pressed="true"><svg class="mode-art" viewBox="0 0 96 64" aria-hidden="true"><rect x="16" y="8" width="64" height="48" rx="7" class="a1"/><path d="M42 23v18l15-9z" class="a4"/><path d="M4 22h8M2 32h10M4 42h8M84 22h8M84 32h10M84 42h8" class="a3"/></svg><span><b>С анимацией</b><small>Герои и мир двигаются</small></span></button>
-      <button type="button" class="mode" data-project="music" aria-pressed="false"><svg class="mode-art" viewBox="0 0 96 64" aria-hidden="true"><path d="M14 32v0M24 24v16M34 14v36M44 22v20M54 8v48M64 18v28M74 26v12M84 30v4" class="a5"/></svg><span><b>Музыка <em class="soon">скоро</em></b><small>Клип под ваш трек</small></span></button>
+    <div class="mode-heading" id="mode-heading"><div><span class="mode-kicker">НАЧНИТЕ ЗДЕСЬ</span><h1>Выберите формат создания</h1></div><div class="mode-navigation" aria-label="Прокрутка форматов"><button type="button" id="mode-prev" aria-label="Предыдущий формат">‹</button><button type="button" id="mode-next" aria-label="Следующий формат">›</button></div></div>
+    <nav class="modes" aria-label="Тип проекта" tabindex="0">
+      <button type="button" class="mode" data-project="none" aria-pressed="false"><svg class="mode-art" viewBox="0 0 96 64" aria-hidden="true"><rect x="22" y="6" width="58" height="40" rx="6" class="a2"/><rect x="12" y="16" width="58" height="40" rx="6" class="a1"/><path d="m18 50 16-16 10 10 8-7 14 13" class="a3"/><circle cx="56" cy="27" r="4" class="a3"/></svg><span><b>Без анимации</b></span></button>
+      <button type="button" class="mode" data-project="animated" aria-pressed="true"><svg class="mode-art" viewBox="0 0 96 64" aria-hidden="true"><rect x="16" y="8" width="64" height="48" rx="7" class="a1"/><path d="M42 23v18l15-9z" class="a4"/><path d="M4 22h8M2 32h10M4 42h8M84 22h8M84 32h10M84 42h8" class="a3"/></svg><span><b>С анимацией</b></span></button>
+      <button type="button" class="mode" data-project="music" aria-pressed="false"><svg class="mode-art" viewBox="0 0 96 64" aria-hidden="true"><path d="M14 32v0M24 24v16M34 14v36M44 22v20M54 8v48M64 18v28M74 26v12M84 30v4" class="a5"/></svg><span><b>Музыка <em class="soon">скоро</em></b></span></button>
     </nav>
 
     <div class="layout">
@@ -81,7 +82,6 @@
               </div>
               <label class="field"><span>Пожелания</span><textarea aria-label="Пожелания к сюжету" id="notes" maxlength="600" placeholder="Герои, события, место, поворот, мораль… (необязательно)"></textarea></label>
             </div>
-            <button type="button" class="more" id="morebtn" aria-expanded="false" aria-controls="extra">Ещё настройки сюжета ▾</button>
           </section>
 
           <section class="pane" aria-labelledby="h-visual">
@@ -123,7 +123,7 @@
             </div>
             <div class="row voice-extras">
               <label class="field range-field"><span>Темп голоса <output id="voice-speed-value">1.00×</output></span><input id="voice-speed" type="range" min="0.75" max="1.25" step="0.05" value="1"></label>
-              <label class="field"><span>Название канала для заставки</span><input id="channel-name" maxlength="80" placeholder="Например: NBS SOFT"></label>
+              <label class="field"><span>Название канала для заставки</span><input id="channel-name" maxlength="80" placeholder="Название канала"></label>
             </div>
           </section>
 
@@ -173,10 +173,7 @@
             </div>
           </section>
 
-          <section class="pane log-pane" aria-label="Журнал">
-            <h3 class="pane-title">Журнал</h3>
-            <ol class="log" id="log" aria-live="polite"></ol>
-          </section>
+          <section class="pane"><label class="review-choice"><input type="checkbox" id="review-script" checked><span>Показать сценарий перед сборкой</span></label><div class="err" id="err" role="alert"></div></section>
         </div>
 
         <div id="music-workspace" class="pane soon-card" hidden>
@@ -192,15 +189,8 @@
           <div class="price-line"><span class="summary-label">Итого</span><span class="price-big" id="price-big">—</span></div>
           <div class="scene-summary" id="scene-summary" aria-live="polite"></div>
           <ul class="summary-list" id="summary-list"></ul>
-          <label class="review-choice"><input type="checkbox" id="review-script" checked><span>Показать сценарий перед сборкой</span></label>
-          <div class="err" id="err" role="alert"></div>
           <button type="button" class="go" id="go" disabled>Создать ролик<small id="est"></small></button>
           <p class="note" id="note" aria-live="polite"></p>
-        </div>
-        <div class="scene-dock" id="scene-dock">
-          <div class="dock-head"><h2>Сцены</h2><span id="dock-count">После сценария</span></div>
-          <div id="dock-scenes" class="dock-scenes"><p>Здесь появятся сцены с текстом диктора. Их можно будет править прямо в колонке.</p></div>
-          <div class="live-progress"><strong id="live-percent">0%</strong><span id="live-stage">Ожидание запуска</span><div><i id="live-bar"></i></div></div>
         </div>
       </aside>
     </div>

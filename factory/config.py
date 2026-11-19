@@ -362,6 +362,12 @@ for key, label, prompt in [
     ("pixel", "Пиксель-арт", "pixel art, retro game aesthetic, crisp pixel edges"),
     ("noir", "Нуар", "film noir, monochrome, dramatic high contrast shadows"),
     ("paper", "Бумажный", "layered paper cutout illustration, handmade paper textures"),
+    ("cyberpunk", "Киберпанк", "cyberpunk cinematic illustration, neon reflections, rain, futuristic city, deep shadows"),
+    ("gouache", "Гуашь", "hand-painted gouache illustration, visible brush strokes, rich matte colors, textured canvas"),
+    ("woodcut", "Гравюра", "vintage woodcut engraving, intricate carved lines, limited ink palette, textured paper"),
+    ("vhs", "Ретро VHS", "1980s analog video aesthetic, warm faded colors, subtle film grain, retro cinematic lighting"),
+    ("stained_glass", "Витраж", "stained glass illustration, luminous colored glass, bold leading, geometric decorative shapes"),
+    ("isometric", "Изометрия", "isometric miniature diorama, detailed tiny architecture, clean shapes, soft studio lighting"),
     ("custom", "Свой вариант", "cinematic illustration"),
 ]:
     STYLES[key] = {"label": label, "budget": (0.50, 3.00), "prompt": prompt, "motion": "Smooth cinematic motion"}
