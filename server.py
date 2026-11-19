@@ -277,11 +277,12 @@ class Handler(BaseHTTPRequestHandler):
         static_files = {
             "/": ("index.html", "text/html; charset=utf-8"),
             "/index.html": ("index.html", "text/html; charset=utf-8"),
-            "/app.css": ("app.css", "text/css; charset=utf-8"),
-            "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+            "/app.css": ("css/app.css", "text/css; charset=utf-8"),
+            "/app.js": ("js/app.js", "text/javascript; charset=utf-8"),
             **{
-                f"/{name}.js": (f"{name}.js", "text/javascript; charset=utf-8")
+                f"/js/{name}.js": (f"js/{name}.js", "text/javascript; charset=utf-8")
                 for name in (
+                    "app",
                     "subtitle-controls",
                     "job-editor",
                     "preferences",

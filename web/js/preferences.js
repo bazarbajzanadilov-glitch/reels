@@ -1,3 +1,7 @@
+/*
+ * localStorage-схема "factory.preferences" (версия не хранится, поля читаются
+ * защитно). При React-порте заменяется на controlled form + persist middleware.
+ */
 function preferenceData() {
   return {custom_style:$("#custom-style").value,custom_genre:$("#custom-genre").value,radios:Object.fromEntries([...document.querySelectorAll('.panel input[type="radio"]:checked, .panel select[name]')].map(input=>[input.name,input.value])),voice:$("#voice").value,minutes:mins(),clips:$("#clips").value,clipsTouched,voiceSpeed:$("#voice-speed").value,channelName:$("#channel-name").value,maxprice:$("#maxprice").value,review:$("#review-script").checked,subtitles:subtitleSettings()};
 }

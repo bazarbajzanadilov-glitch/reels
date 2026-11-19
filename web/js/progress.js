@@ -1,5 +1,10 @@
 "use strict";
 
+/*
+ * Экран прогресса. progressRequest защищает от гонок: ответы старого job
+ * игнорируются. Веса этапов ниже дают примерную готовность до финального статуса.
+ * При переносе на React это отдельный ProgressScreen с теми же stage-ключами.
+ */
 let progressId = null, progressScriptId = null, progressRequest = 0;
 const stageNames = {script:"Сценарий",voice:"Озвучка",images:"Кадры",animation:"Анимация",render:"Монтаж",cover:"Обложка",texts:"Тексты"};
 const stageStates = {waiting:"Ожидание",running:"Создаётся",done:"Готово",skipped:"Не выбрано",error:"Ошибка"};

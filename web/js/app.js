@@ -1,5 +1,12 @@
 "use strict";
 
+/*
+ * Vanilla-контроллер студии.
+ * Состояние живёт в DOM и модульных переменных (OPT, jobs, cur, refData).
+ * При переносе на React это разбивается на: OptionsProvider, useEstimate,
+ * useCreateJob, useHistory и JobDialog. Вспомогательные функции ниже
+ * (esc, money, copyText) переиспользуются как утилиты.
+ */
 const $ = s => document.querySelector(s);
 const val = n => (document.querySelector(`input[name=${n}]:checked`) || document.querySelector(`select[name=${n}]`))?.value;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -8,8 +15,14 @@ const dlg = $("#dlg");
 
 let OPT = null;
 const mins = () => +$("#minutes").value;
-const FLAGS = {ru: "🇷🇺", kk: "🇰🇿", en: "🇬🇧", de: "🇩🇪"};
-const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
+const LANG_META = {
+  ru: {flag: "🇷🇺", name: "Русский"},
+  kk: {flag: "🇰🇿", name: "Қазақша"},
+  en: {flag: "🇬🇧", name: "English"},
+  de: {flag: "🇩🇪", name: "Deutsch"},
+};
+const langName = code => LANG_META[code]?.name || "";
+const langOption = code => `${LANG_META[code]?.flag || ""} ${LANG_META[code]?.name || code}`.trim();
 
 const copyText = async text => {
   try { await navigator.clipboard.writeText(text); return true; }
@@ -27,12 +40,6 @@ const opts = (id, entries, checked) => { const el = $(id);
   el.innerHTML = entries.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
   el.value = checked; };
 const labelOf = x => typeof x === "string" ? x : x?.label || "";
-// кнопки − / + у числовых полей
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-step]"); if (!b) return;
-  const input = $(b.dataset.step), next = Math.min(+input.max || Infinity, Math.max(+input.min || 0, (+input.value || 0) + +b.dataset.d));
-  input.value = next; input.dispatchEvent(new Event("input", {bubbles: true}));
-});
 
 function voices() {
   const p = OPT.voices[val("provider")], list = p[val("gender")];
@@ -47,7 +54,7 @@ $("#voice-play").onclick = () => playVoice($("#voice").value, $("#voice-play"));
 async function init() {
   OPT = await fetch("/api/options").then(r => r.json());
   if (OPT.word_timing) { $("#subtitle-word-option").disabled = false; $("#subtitle-word-option").textContent = "По словам"; }
-  opts("#langs", Object.keys(OPT.langs).map(k => [k, `${FLAGS[k] || ""} ${LANG_NAMES[k] || OPT.langs[k]}`]), "ru");
+  opts("#langs", Object.keys(OPT.langs).map(k => [k, langOption(k)]), "ru");
   opts("#genres", Object.entries(OPT.genres).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#tones", Object.entries(OPT.tones).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#styles", Object.entries(OPT.styles).map(([k, l]) => [k, labelOf(l).replace(" мультфильм", "")]), "2d");
@@ -88,13 +95,14 @@ function summary() {
   const label = (name, items) => { const v = val(name); const x = items?.[v]; return typeof x === "string" ? x : x?.label || v; };
   const rows = [
     ["Формат", `${val("format") === "vertical" ? "9:16" : "16:9"} · ${mins()} мин`],
-    ["Язык", LANG_NAMES[val("lang")] || ""],
+    ["Язык", langName(val("lang"))],
     ["Сюжет", `${label("genre", OPT.genres)} · ${label("tone", OPT.tones).toLowerCase()}`],
     ["Стиль", label("style", OPT.styles)],
     ["Голос", `${$("#voice").value || ""} · ${OPT.voices[val("provider")].label}`],
   ];
   $("#summary-list").innerHTML = rows.map(([k, text]) => `<li><span>${k}</span><b>${esc(text)}</b></li>`).join("");
 }
+// Оценка стоимости: отменяем предыдущий запрос, чтобы последний ввод побеждал.
 async function estimate() {
   if (!OPT) return;
   summary();
@@ -176,6 +184,7 @@ async function balance() {
 }
 
 let refData = null, sceneRefData = null;
+// Референс сжимается до 1024 px и JPEG 0.88: меньше payload, достаточно для сходства.
 function readImage(input, done) {
   const file = input.files[0]; if (!file) return;
   const img = new Image(), url = URL.createObjectURL(file);
@@ -197,14 +206,18 @@ function showReference(labelId, removeId, data, text) {
 }
 $("#reffile").onchange = e => readImage(e.target, data => {
   refData = data; showReference("#ref", "#refrm", data, "Персонаж добавлен");
-  $("#exactrow").style.display = ""; estimate();
+  $("#exactrow").hidden = false; estimate();
 });
 $("#refrm").onclick = e => { e.preventDefault(); e.stopPropagation(); refData = null; $("#reffile").value = "";
   showReference("#ref", "#refrm", null, "Персонаж");
-  $("#exactrow").style.display = "none"; $("#e0").checked = true; estimate(); };
+  $("#exactrow").hidden = true; $("#e0").checked = true; estimate(); };
 $("#scene-file").onchange = e => readImage(e.target, data => { sceneRefData = data; showReference("#scene-ref", "#scene-rm", data, "Место добавлено"); });
 $("#scene-rm").onclick = () => { sceneRefData = null; $("#scene-file").value = ""; showReference("#scene-ref", "#scene-rm", null, "Место действия"); };
 
+/*
+ * Idempotency-Key: одинаковый payload переиспользует pending id.
+ * Это защищает от двойного клика и повторной отправки после сетевой ошибки.
+ */
 async function creationKey(body) {
   let signature;
   if (window.crypto?.subtle) {
@@ -221,6 +234,7 @@ async function creationKey(body) {
   return pending.id;
 }
 
+// Собирает один payload, блокирует CTA на время запроса и сохраняет pending id для retry.
 async function create() {
   if ($("#go").disabled || !OPT) return;
   const topic = $("#topic").value.trim();
@@ -265,6 +279,7 @@ function pct(p = "") {
 let jobs = [];
 let loadingJobs = false;
 let lastJobsMarkup = "";
+// Единая загрузка истории; защита от параллельных запросов при событиях воркера.
 async function load() {
   if (loadingJobs) return;
   loadingJobs = true;
@@ -316,14 +331,13 @@ async function openJob(id) {
   if (!j) return;
   if (j.deleted_at) { await postJob(j.id,"restore",{}); return load(); }
   if (j.status==="draft") return openScript(j);
-  if (["error","cancelled","queued","running","cancelling"].includes(j.status)) {
-    if (["queued","running","cancelling"].includes(j.status)) return showProgress(id);
+  if (["queued","running","cancelling"].includes(j.status)) return showProgress(id);
+  if (["error","cancelled"].includes(j.status)) {
     retryJob = j.id;
-    retryAction=["queued","running","cancelling"].includes(j.status)?"cancel":"retry";
-    $("#retry-title").textContent=retryAction==="cancel"?"Остановить создание?":"Повторить создание?";
-    $("#retry-go").textContent=retryAction==="cancel"?"Остановить":"Повторить";
+    $("#retry-title").textContent = "Повторить создание?";
+    $("#retry-go").textContent = "Повторить";
     $("#retry-error").textContent = j.progress || "Не удалось создать ролик";
-    $("#retry-note").textContent=retryAction==="cancel"?"Новые запросы остановятся. Уже отправленные запросы могут завершиться и быть оплачены.":"Повтор использует оставшийся бюджет. Готовые материалы и этапы используются повторно.";
+    $("#retry-note").textContent = "Повтор использует оставшийся бюджет. Готовые материалы и этапы используются повторно.";
     $("#retry-dialog").showModal();
     return;
   }
@@ -423,13 +437,13 @@ function connectJobEvents() {
 document.addEventListener("visibilitychange",connectJobEvents);
 setInterval(()=>{if (!document.hidden) { balance(); if (!window.EventSource) load(); }},60000);
 
-let retryJob = null, retryAction="retry";
+let retryJob = null;
 $("#retry-cancel").onclick = () => $("#retry-dialog").close();
 $("#retry-go").onclick = async () => {
   if (!retryJob || $("#retry-go").disabled) return;
   $("#retry-go").disabled = true;
   try {
-    const response = await fetch(`/api/jobs/${retryJob}/${retryAction}`, {method:"POST"});
+    const response = await fetch(`/api/jobs/${retryJob}/retry`, {method:"POST"});
     const result = await response.json();
     if (!response.ok || result.error) throw new Error(result.error || "Не удалось повторить");
     $("#retry-dialog").close();
@@ -440,6 +454,7 @@ $("#retry-go").onclick = async () => {
 
 
 
+// Карточки формата, карусель на телефоне и переключатель режима субтитров.
 function setupStudio() {
   const tabs=[...document.querySelectorAll('[data-project]')];
   const rail=$('.modes');
@@ -479,6 +494,10 @@ function syncChoiceButtons(select) {
     button.disabled=!!option?.disabled;
   });
 }
+/*
+ * Скрытый <select> остаётся источником значения для формы и localStorage,
+ * а кнопки — только визуальный слой. В React это controlled ChoiceGroup.
+ */
 function setupChoiceButtons() {
   const ids=["langs","genres","tones","narrators","endings","audiences","styles","vmodels","providers","genders","subtitle-preset","subtitle-outline-mode","subtitle-timing"];
   ids.forEach(id=>{
@@ -506,6 +525,7 @@ window.visualViewport?.addEventListener("resize",syncKeyboardPanel);
 document.addEventListener("focusin",syncKeyboardPanel);
 document.addEventListener("focusout",()=>setTimeout(syncKeyboardPanel,0));
 
+// Добавляет числовое поле рядом с range: удобно на телефоне и при точной настройке.
 function setupPreciseRanges() {
   document.querySelectorAll(".subtitle-range input[type=range], #voice-speed").forEach(range=>{
     if (range.dataset.precise) return; range.dataset.precise="true";

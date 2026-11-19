@@ -1,3 +1,8 @@
+/*
+ * Редактор сценария и действия с job.
+ * API: GET /api/jobs/:id/script, POST /api/jobs/:id/{script,render,trash}.
+ * editingJob/editingScript — локальное состояние модалки до сохранения.
+ */
 async function postJob(id,action,data) {
   const response=await fetch(`/api/jobs/${id}/${action}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
   const result=await response.json();

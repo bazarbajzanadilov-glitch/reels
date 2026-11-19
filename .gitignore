@@ -12,6 +12,8 @@ backups/
 
 releases/
 .ruff_cache/
+playwright-report/
+test-results/
 
 .env.local
 .env.*.local

@@ -1,3 +1,9 @@
+/*
+ * Субтитры: DOM-поля #subtitle-* — единственный source of truth.
+ * subtitleSettings() собирает plain object для API, localStorage и React-порта.
+ * previewSubtitles() debounce-ится на 180 мс, а AbortController отменяет
+ * устаревшие запросы, чтобы последний ответ всегда соответствовал настройкам.
+ */
 const SUBTITLE_PALETTES = {
   bright: ["#ffffff", "#ffd166", "#62e6b5", "#7cc8ff", "#ff92c2"],
   pastel: ["#fff1b8", "#b8f0dd", "#c9deff", "#edcaff", "#ffd1dc"],
