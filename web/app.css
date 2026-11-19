@@ -10,11 +10,11 @@
   --text: #eef0fa;
   --muted: #9ea3cc;
   --faint: #676d9f;
-  --accent: #cda65e;
-  --accent-hover: #e1c181;
+  --accent: #f5b414;
+  --accent-hover: #ffc53a;
   --accent-ink: #1b1400;
   --sel-bg: rgba(245, 180, 20, .12);
-  --grad: linear-gradient(180deg, #dec17d, #bd9450);
+  --grad: linear-gradient(180deg, #ffcd45, #f0a400);
   --ok: #46d98e;
   --warn: #f0b45a;
   --danger: #ff6b76;
@@ -459,4 +459,26 @@ dialog::backdrop { background: rgba(5, 7, 18, .8); backdrop-filter: blur(4px); }
   .mode small { font-size:.68rem; }
   .mode::after { position:absolute; right:.45rem; bottom:.4rem; font-size:.62rem; padding:.15rem .35rem; }
   .mode span { padding-bottom:1rem; }
+}
+
+.logo::before { display:none; }
+.brand-mark { width:2.35rem; height:2.35rem; flex:none; }
+.brand-mark rect { fill:#f5b414; stroke:none; }
+.brand-mark path:nth-of-type(1) { fill:#17172b; stroke:none; }
+.brand-mark path:nth-of-type(2) { stroke:#17172b; stroke-width:2; }
+.logo { gap:.55rem; letter-spacing:-.02em; }
+.mode[aria-pressed="true"] { border-color:var(--accent); background:#2b2940; }
+.mode[aria-pressed="true"]::after { color:#ffdf8a; border-color:#a57b24; background:#40351e; }
+.topic-box { border-color:#a27c2d; }
+.topnav button.active { color:#ffe29a; border-color:#937224; background:#3a311e; }
+.topnav button.active i { background:var(--accent); color:var(--accent-ink); }
+.seg input:checked + label, .seg > button[aria-pressed="true"], .tabs button.on { border-color:#b58a2b; color:#ffe5a3; background:#443820; }
+.pane-title i { color:#ffd475; }
+.mode:focus-visible, .topnav button:focus-visible { outline-offset:3px; }
+@media (max-width:44rem) {
+  .brand-mark { width:2rem; height:2rem; }
+  .logo { font-size:.95rem; }
+  .history-controls select { min-height:2.75rem; }
+  .btn, .chip { min-height:2.5rem; }
+  .quick-downloads a { min-height:2.25rem; display:grid; place-items:center; }
 }
