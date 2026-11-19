@@ -4,13 +4,16 @@ const $ = s => document.querySelector(s);
 const val = n => document.querySelector(`input[name=${n}]:checked`).value;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money = x => "$" + Number(x || 0).toFixed(2);
-const icon = (name, cls = "") => `<svg class="${cls}"><use href="#${name}"/></svg>`;
 const dlg = $("#dlg");
 
 let OPT = null;
 const mins = () => +$("#minutes").value;
 const FLAGS = {ru: "🇷🇺", kk: "🇰🇿", en: "🇬🇧", de: "🇩🇪"};
 const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
+const STYLE_NOTES = {"2d": "Плоская векторная графика", "3d": "Объём, как в мультфильмах Pixar", anime: "Японская анимация",
+  real: "Как настоящее фото", comic: "Чёткие контуры, яркие цвета", watercolor: "Мягкие краски на бумаге",
+  clay: "Пластилиновые герои", pixel: "Ретро-игры, пиксели", noir: "Чёрно-белое кино, тени",
+  paper: "Аппликация из бумаги", custom: "Опишите сами"};
 
 function setMins(m) {
   $("#minutes").value = m; $("#mval").textContent = m + " мин";
@@ -28,22 +31,24 @@ function voices() {
   const p = OPT.voices[val("provider")], list = p[val("gender")];
   $("#voice").innerHTML = list.map(v => `<option value="${v}" ${v === p.default ? "selected" : ""}>${v}</option>`).join("");
   if (!list.includes($("#voice").value)) $("#voice").value = list[0];
-  $("#voice-list").innerHTML = list.map(v => `<div class="voice" data-voice="${esc(v)}">
-    <button type="button" class="voice-pick" role="radio" aria-checked="false">${esc(v[0].toUpperCase() + v.slice(1))}</button>
-    <button type="button" class="voice-play" aria-label="Прослушать ${esc(v)}">${icon("i-play")}</button></div>`).join("");
+  // один клик по голосу: выбрать и сразу прослушать; повторный клик по играющему — остановить
+  $("#voice-list").innerHTML = list.map(v => `<button type="button" class="voice" data-voice="${esc(v)}" role="radio" aria-checked="false">
+    <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><b>${esc(v[0].toUpperCase() + v.slice(1))}</b></button>`).join("");
   syncVoices();
 }
 function syncVoices() {
   document.querySelectorAll("#voice-list .voice").forEach(el => {
     const on = el.dataset.voice === $("#voice").value;
-    el.classList.toggle("on", on); el.querySelector(".voice-pick").setAttribute("aria-checked", String(on));
+    el.classList.toggle("on", on); el.setAttribute("aria-checked", String(on));
   });
 }
 $("#voice-list").onclick = e => {
   const tile = e.target.closest(".voice"); if (!tile) return;
-  if (e.target.closest(".voice-play")) return playVoice(tile.dataset.voice, e.target.closest(".voice-play"));
-  $("#voice").value = tile.dataset.voice;
-  $("#voice").dispatchEvent(new Event("change", {bubbles: true}));
+  if ($("#voice").value !== tile.dataset.voice) {
+    $("#voice").value = tile.dataset.voice;
+    $("#voice").dispatchEvent(new Event("change", {bubbles: true}));
+  }
+  playVoice(tile.dataset.voice, tile);
 };
 
 async function init() {
@@ -55,7 +60,7 @@ async function init() {
     [k, `<b>${esc(l)}</b>`]), "auto", "tile-text");
   seg("#tones", "tone", OPT.tones, "auto");
   tiles("#styles", "style", Object.entries(OPT.styles).map(([k, l]) =>
-    [k, `<b>${esc(l.replace(" мультфильм", ""))}</b>`]), "2d", "tile-text");
+    [k, `<b>${esc(l.replace(" мультфильм", ""))}</b><small>${STYLE_NOTES[k] || ""}</small>`]), "2d", "tile-style");
   tiles("#vmodels", "vmodel", Object.entries(OPT.video_models).map(([k, v]) =>
     [k, `<span class="dot"></span><b>${esc(v.label)}</b><small>${esc(v.note)}</small><em>${money(v.price)} <i>за сцену</i></em>`]), "pvideo", "row-option");
   let priceTimer;
@@ -151,7 +156,7 @@ let audio = null, audioButton = null;
 function stopAudio() {
   if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); }
   audio = null;
-  if (audioButton) { audioButton.innerHTML = icon("i-play"); audioButton.classList.remove("busy", "playing"); }
+  if (audioButton) audioButton.classList.remove("busy", "playing");
   audioButton = null;
 }
 async function playVoice(name, button) {
@@ -159,7 +164,7 @@ async function playVoice(name, button) {
   stopAudio();
   if (same) return;
   audioButton = button;
-  button.classList.add("busy", "playing"); button.innerHTML = icon("i-stop");
+  button.classList.add("busy", "playing");
   const sample = audio = new Audio(`/voices/${val("provider")}/${name}_${val("lang")}.mp3`);
   sample.oncanplay = () => { if (audio === sample) button.classList.remove("busy"); };
   sample.onended = sample.onerror = () => { if (audio === sample) stopAudio(); };
@@ -247,6 +252,7 @@ async function create() {
 }
 $("#go").onclick = create;
 $("#topic").onkeydown = e => { if (e.key === "Enter") create(); };
+document.querySelectorAll(".idea").forEach(b => b.onclick = () => { $("#topic").value = b.textContent; $("#topic").focus(); });
 
 // грубый процент готовности по этапу
 function pct(p = "") {
