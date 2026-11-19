@@ -377,3 +377,23 @@ dialog::backdrop { background: rgba(5, 7, 18, .8); backdrop-filter: blur(4px); }
 .dock-scene { display:grid; gap:.3rem; margin-bottom:.7rem; color:var(--accent); font-size:.8rem; }
 .dock-scene textarea { width:100%; min-height:4rem; }
 @media (max-width:64rem) { .summary.scenes-only { position:static; margin:0; } .scene-tab { display:block; } }
+
+/* Навигация студии */
+.topbar-in { gap:1.5rem; }
+.topnav { display:flex; align-items:center; gap:.25rem; flex-wrap:nowrap; padding:.25rem; border:1px solid var(--line); border-radius:.8rem; background:#11152d; }
+.topnav button { display:flex; align-items:center; justify-content:center; gap:.5rem; min-height:2.55rem; padding:.45rem .8rem; border:1px solid transparent; border-radius:.55rem; color:var(--muted); font-size:.82rem; font-style:normal; white-space:nowrap; transition:background .15s,color .15s,border-color .15s; }
+.topnav button i { display:grid; place-items:center; width:1.35rem; height:1.35rem; border-radius:.4rem; background:var(--surface-2); color:var(--muted); font-size:.7rem; font-style:normal; }
+.topnav button:hover { color:var(--text); background:var(--surface); }
+.topnav button.active { color:#ffe4a0; background:rgba(245,180,20,.12); border-color:rgba(245,180,20,.34); }
+.topnav button.active i { background:var(--accent); color:var(--accent-ink); }
+@media (max-width:64rem) {
+  .topbar-in { display:grid; grid-template-columns:1fr auto; gap:.6rem; padding:.65rem 1rem .55rem; }
+  .topnav { grid-column:1/-1; order:initial; width:100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.15rem; overflow:visible; margin:0; }
+  .topnav button { min-width:0; min-height:2.75rem; gap:.3rem; padding:.35rem .2rem; font-size:.72rem; white-space:normal; line-height:1.1; }
+  .topnav button span { text-align:center; }
+  .topnav button i { flex:none; width:1.15rem; height:1.15rem; font-size:.65rem; }
+}
+@media (max-width:23rem) {
+  .topnav button { flex-direction:column; gap:.15rem; min-height:3.15rem; font-size:.66rem; }
+  .topnav button i { width:1rem; height:1rem; }
+}

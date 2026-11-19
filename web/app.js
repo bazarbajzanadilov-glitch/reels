@@ -433,7 +433,7 @@ async function updateDock() {
   } catch {}
 }
 document.querySelectorAll("[data-worktab]").forEach(button=>button.onclick=()=>{
-  document.querySelectorAll("[data-worktab]").forEach(x=>x.classList.toggle("active",x===button));
+  document.querySelectorAll("[data-worktab]").forEach(x=>{x.classList.toggle("active",x===button); if(x===button) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current");});
   const target=activeWorktab=button.dataset.worktab;
   $("#project-history").hidden=target!=="history";
   $("#create").hidden=target==="history";
