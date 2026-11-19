@@ -139,12 +139,14 @@ class AccessTests(unittest.TestCase):
     def test_password(self):
         import base64
 
-        with patch("server.env", return_value="test-only-password"):
+        basic = lambda pair: {"Authorization": "Basic " + base64.b64encode(pair).decode()}
+        settings = {"ACCESS_PASSWORD": "test-only-password"}
+        with patch("server.env", side_effect=settings.get):
             self.assertEqual(self.request()[0], 401)
-            auth = base64.b64encode(b"user:test-only-password").decode()
-            self.assertEqual(
-                self.request(headers={"Authorization": "Basic " + auth})[0], 200
-            )
+            self.assertEqual(self.request(headers=basic(b"user:test-only-password"))[0], 200)
+            settings["ACCESS_LOGIN"] = "1"  # с заданным логином чужой логин не проходит
+            self.assertEqual(self.request(headers=basic(b"user:test-only-password"))[0], 401)
+            self.assertEqual(self.request(headers=basic(b"1:test-only-password"))[0], 200)
 
     def test_remote_binding_fails_before_workers(self):
         with (

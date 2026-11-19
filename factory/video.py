@@ -1,4 +1,4 @@
-"""Анимация сцен: картинка -> 5-секундный клип (Wan 2.2 Fast через Pollinations).
+"""Анимация сцен: картинка -> 5-секундный клип через видео-модель Pollinations (выбирает клиент).
 
 Картинка загружается в хранилище Pollinations (публичная, но не перечисляемая ссылка),
 ставится задача на видео и опрашивается до готовности. Клипы кэшируются в cache/clips/.
@@ -41,7 +41,7 @@ def upload(path: Path) -> str:
 
 
 def clip_path(image: Path, motion: str, model: str = VIDEO_DEFAULT) -> Path:
-    mid = VIDEO_MODELS[model]["model"]
+    mid = VIDEO_MODELS.get(model, VIDEO_MODELS[VIDEO_DEFAULT])["model"]
     h = hashlib.sha1(f"{mid}|{image.name}|{motion}".encode()).hexdigest()[:16]
     d = CACHE / "clips"
     d.mkdir(parents=True, exist_ok=True)
@@ -124,7 +124,7 @@ def _animate(
     out = clip_path(image, motion, model)
     if valid_video(out):
         return out
-    main, extra = VIDEO_MODELS[model]["model"], VIDEO_MODELS[model]["params"]
+    main, extra = VIDEO_MODELS.get(model, VIDEO_MODELS[VIDEO_DEFAULT])["model"], VIDEO_MODELS.get(model, VIDEO_MODELS[VIDEO_DEFAULT])["params"]
     fb = {"resolution": "480p"}
     try:
         url = upload(image)

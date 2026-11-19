@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import budget, cost, reference, subtitles as subtitle_tools, video, writer
 from .assemble import assemble, seed_of
-from .config import CHARACTER, STYLE, STYLE_TAIL, STYLES, TONES
+from .config import VIDEO_DEFAULT, CHARACTER, STYLE, STYLE_TAIL, STYLES, TONES
 from .cover import PRICE as COVER_PRICE, make_cover
 from .files import atomic_json, fingerprint, valid_image, valid_video
 
@@ -32,7 +32,7 @@ def run(
     notes: str = "",
     custom_style: str = "",
     custom_genre: str = "",
-    video_model: str = "wan",
+    video_model: str = VIDEO_DEFAULT,
     max_price: float | None = None,
     prior_spent: float = 0.0,
     subtitles: dict | None = None,

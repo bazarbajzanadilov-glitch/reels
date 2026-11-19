@@ -19,6 +19,7 @@ from .audio import mix
 from .execution import CURRENT
 from .files import atomic_json, fingerprint, valid_audio
 from .config import (
+    VIDEO_DEFAULT,
     CHARACTER,
     FORMATS,
     FPS,
@@ -195,7 +196,7 @@ def assemble(
                     return
                 check_cancelled()
                 r = video.animate(
-                    pics[i], motion[i], f["aspect"], log, data.get("video_model", "wan")
+                    pics[i], motion[i], f["aspect"], log, data.get("video_model", VIDEO_DEFAULT)
                 )
             except (Cancelled, OfflineOnly, UncertainRequest) as error:
                 with lock:

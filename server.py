@@ -206,9 +206,10 @@ class Handler(BaseHTTPRequestHandler):
         h = self.headers.get("Authorization", "")
         if h.startswith("Basic "):
             try:
-                if hmac.compare_digest(
-                    base64.b64decode(h[6:]).decode().split(":", 1)[1].encode(),
-                    pw.encode(),
+                user, given = base64.b64decode(h[6:]).decode().split(":", 1)
+                login = env("ACCESS_LOGIN")  # если задан — логин тоже проверяется
+                if hmac.compare_digest(given.encode(), pw.encode()) and (
+                    not login or hmac.compare_digest(user.encode(), login.encode())
                 ):
                     return True
             except Exception:

@@ -42,13 +42,6 @@ IMAGE_MODEL = "flux"
 IMAGE_MODEL_REF = "black-forest-labs/flux.2-klein-4b"  # точное сходство с референсом
 # Видео-модели на выбор клиента. price — $ за 5-секундный клип, params — доп. параметры запроса.
 VIDEO_MODELS = {
-    "wan": {
-        "label": "Wan 2.2",
-        "note": "быстро, 480p",
-        "model": "alibaba/wan-2.2-fast",
-        "price": 0.05,
-        "params": {},
-    },
     "pvideo": {
         "label": "P-Video",
         "note": "720p",
@@ -71,7 +64,7 @@ VIDEO_MODELS = {
         "params": {"resolution": "480p"},
     },
 }
-VIDEO_DEFAULT = "wan"
+VIDEO_DEFAULT = "pvideo"
 VIDEO_MODEL_FALLBACK = (
     "bytedance/seedance-1-pro-fast"  # если фильтр модели отклонил сцену; 480p, $0.05
 )
@@ -326,7 +319,7 @@ AUDIENCES = {
 STYLES = {
     "2d": {
         "label": "2D мультфильм",
-        "budget": (0.28, 2.00),
+        "budget": (0.35, 2.00),
         "prompt": "flat 2D vector illustration, minimalist cartoon style, cinematic palette, "
         "soft cinematic rim light, simple clean shapes, smooth gradients",
         "motion": "Flat 2D cartoon animation, simple smooth motion",
@@ -342,21 +335,21 @@ STYLES = {
     },
     "anime": {
         "label": "Аниме",
-        "budget": (0.28, 2.00),
+        "budget": (0.35, 2.00),
         "prompt": "anime style illustration, cel shading, bold clean line art, expressive eyes, vibrant colors, "
         "dramatic anime lighting",
         "motion": "Anime animation, expressive smooth motion",
     },
     "real": {
         "label": "Реализм",
-        "budget": (0.28, 2.00),
+        "budget": (0.35, 2.00),
         "prompt": "photorealistic cinematic film still, realistic human, natural skin, 35mm lens, "
         "dramatic cinematic lighting, shallow depth of field",
         "motion": "Realistic cinematic footage, natural motion",
     },
     "comic": {
         "label": "Комикс",
-        "budget": (0.28, 2.00),
+        "budget": (0.35, 2.00),
         "prompt": "comic book illustration, bold ink outlines, halftone shading, dynamic composition, "
         "saturated graphic colors",
         "motion": "Comic book style animation, punchy motion",
@@ -370,7 +363,7 @@ for key, label, prompt in [
     ("paper", "Бумажный", "layered paper cutout illustration, handmade paper textures"),
     ("custom", "Свой вариант", "cinematic illustration"),
 ]:
-    STYLES[key] = {"label": label, "budget": (0.28, 2.00), "prompt": prompt, "motion": "Smooth cinematic motion"}
+    STYLES[key] = {"label": label, "budget": (0.35, 2.00), "prompt": prompt, "motion": "Smooth cinematic motion"}
 
 STYLE_TAIL = ", no text, no letters, no watermark"
 STYLE = STYLES["2d"]["prompt"] + STYLE_TAIL

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0d12">
+<meta name="theme-color" content="#0e0f12">
 <title>Reels Studio</title>
 <link rel="stylesheet" href="/app.css">
 <script src="/app.js" defer></script>
@@ -15,180 +15,240 @@
 <body>
 <svg class="sprite" aria-hidden="true">
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
-  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></symbol>
-  <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 21h6M12 17v4"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-pen" viewBox="0 0 24 24"><path d="m4 20 4-1L20 7l-4-4L4 15z"/><path d="M13 6l4 4"/></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></symbol>
   <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/></symbol>
   <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.6 0-1-.8-1.4-.8-2.4 0-1 .9-1.6 2-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></symbol>
-  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></symbol>
-  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20 12 12 20 4 12V4h8z"/><circle cx="8" cy="8" r="1.4"/></symbol>
-  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol>
-  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
-  <symbol id="i-captions" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h4M13 12h4M7 15h4M13 15h4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 24 24"><path d="m3 20 7-12 4 7 2-3 5 8z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></symbol>
   <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M17 9h4M3 15h4M17 15h4"/></symbol>
   <symbol id="i-slides" viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="12" rx="2"/><path d="M7 19h12a2 2 0 0 0 2-2V9"/><path d="m6 14 3-3 2 2 2-2 2 2"/></symbol>
   <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20 12 12 20 4 12V4h8z"/><circle cx="8" cy="8" r="1.4"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-captions" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h4M13 12h4M7 15h4M13 15h4"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="16.5" cy="13.5" r="1.3"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
   <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M17 10l4-2v8l-4-2"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-ghost" viewBox="0 0 24 24"><path d="M5 20V10a7 7 0 0 1 14 0v10l-2.5-2-2.3 2-2.2-2-2.2 2-2.3-2z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></symbol>
+  <symbol id="i-wand" viewBox="0 0 24 24"><path d="m4 20 11-11M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.6 1.4L21 13l-1.4.6L19 15l-.6-1.4L17 13l1.4-.6z"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1 1-1.5 4-1.5 4s3-.5 4-1.5M9 15l-3-3c1-4 4.5-8 11-8 0 6.5-4 10-8 11zM14.5 9.5h.01"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="i-mask" viewBox="0 0 24 24"><path d="M4 5c3 1.5 13 1.5 16 0v6a8 8 0 0 1-16 0z"/><path d="M8.5 10.5h2M13.5 10.5h2M9 15c1.8-1 4.2-1 6 0"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/></symbol>
 </svg>
 
 <header class="topbar">
   <div class="topbar-in">
-    <a class="logo" href="#create"><span class="logo-mark"><svg><use href="#i-play"/></svg></span>Reels<span>Studio</span></a>
+    <a class="logo" href="#create"><span class="logo-mark"><svg><use href="#i-film"/></svg></span>Reels Studio</a>
     <nav class="topnav" aria-label="Разделы"><a href="#create">Создать</a><a href="#project-history">Мои ролики</a></nav>
-    <div class="bal" id="bal">—</div>
+    <div class="bal" id="bal" title="Баланс сервиса генерации">—</div>
   </div>
 </header>
 
 <main class="wrap">
   <section class="hero" id="create">
     <div class="hero-head">
-      <p class="eyebrow">AI-студия коротких роликов</p>
-      <h1>Опишите идею — <em>ролик соберётся сам</em></h1>
-      <p class="lead">Сценарий, озвучка, кадры, анимация, обложка и тексты для YouTube, Instagram, TikTok и Facebook.</p>
+      <div>
+        <h1>Новый ролик</h1>
+        <p class="lead">Опишите идею — сценарий, озвучка, кадры, обложка и тексты для соцсетей соберутся сами.</p>
+      </div>
+      <nav class="creation-tabs" aria-label="Тип проекта">
+        <button type="button" data-project="none" aria-pressed="false"><svg><use href="#i-slides"/></svg>Слайд-шоу</button>
+        <button type="button" data-project="animated" aria-pressed="true"><svg><use href="#i-film"/></svg>Анимация</button>
+        <button type="button" data-project="music" aria-pressed="false"><svg><use href="#i-music"/></svg>Музыка<em class="soon">скоро</em></button>
+      </nav>
     </div>
-
-    <nav class="creation-tabs" aria-label="Тип проекта">
-      <button type="button" data-project="none" aria-pressed="false"><svg><use href="#i-slides"/></svg><span><b>Слайд-шоу</b><small>кадры с движением камеры</small></span></button>
-      <button type="button" data-project="animated" aria-pressed="true"><svg><use href="#i-film"/></svg><span><b>Анимация</b><small>оживлённые сцены</small></span></button>
-      <button type="button" data-project="music" aria-pressed="false"><svg><use href="#i-music"/></svg><span><b>Музыка <em class="soon">скоро</em></b><small>клипы под трек</small></span></button>
-    </nav>
 
     <div class="layout">
       <div class="steps">
         <div id="video-workspace" class="panel studio">
 
-          <section class="card idea-stage" aria-labelledby="h-idea">
-            <header class="card-head"><span class="step">1</span><div><h2 id="h-idea">Идея</h2><p>О чём ролик и где его покажете</p></div></header>
-            <div class="topic-box">
-              <svg class="topic-ic"><use href="#i-pen"/></svg>
-              <input aria-label="Тема ролика" id="topic" maxlength="200" placeholder="Например: мальчик нашёл дверь в другой мир у себя в шкафу" autocomplete="off">
+          <!-- 1. Идея -->
+          <section class="card" aria-labelledby="h-idea">
+            <header class="card-head"><span class="step">1</span><h2 id="h-idea">Идея</h2></header>
+            <label class="topic-box" for="topic"><svg class="topic-ic"><use href="#i-pen"/></svg>
+              <input aria-label="Тема ролика" id="topic" maxlength="200" placeholder="Например: мальчик нашёл дверь в другой мир у себя в шкафу" autocomplete="off"></label>
+
+            <div class="group">
+              <h3><svg class="ic"><use href="#i-globe"/></svg>Язык</h3>
+              <div class="tiles tiles-4" id="langs"></div>
             </div>
-            <div class="field-grid">
-              <div class="row"><b><svg class="ic"><use href="#i-globe"/></svg>Язык</b><div class="ctl"><div class="seg" id="langs"></div></div></div>
-              <div class="row"><b><svg class="ic"><use href="#i-screen"/></svg>Формат</b><div class="ctl"><div class="seg">
-                <input type="radio" name="format" id="f1" value="vertical" checked><label for="f1"><svg class="ic"><use href="#i-phone"/></svg>9:16</label>
-                <input type="radio" name="format" id="f2" value="horizontal"><label for="f2"><svg class="ic"><use href="#i-screen"/></svg>16:9</label></div></div></div>
+            <div class="group split">
+              <div>
+                <h3><svg class="ic"><use href="#i-film"/></svg>Формат</h3>
+                <div class="tiles tiles-2">
+                  <input type="radio" name="format" id="f1" value="vertical" checked><label class="tile tile-format" for="f1"><span class="frame v"></span><b>9:16</b><small>Reels, Shorts, TikTok</small></label>
+                  <input type="radio" name="format" id="f2" value="horizontal"><label class="tile tile-format" for="f2"><span class="frame h"></span><b>16:9</b><small>YouTube</small></label>
+                </div>
+              </div>
+              <div>
+                <h3><svg class="ic"><use href="#i-clock"/></svg>Длина <span class="mval" id="mval">1 мин</span></h3>
+                <div class="presets"><button type="button" class="chip" data-m="1">1 мин</button><button type="button" class="chip" data-m="3">3</button><button type="button" class="chip" data-m="5">5</button><button type="button" class="chip" data-m="10">10</button><button type="button" class="chip" data-m="15">15</button></div>
+                <input type="range" aria-label="Длительность в минутах" id="minutes" min="1" max="15" step="1" value="1">
+              </div>
             </div>
-            <div class="row"><b><svg class="ic"><use href="#i-clock"/></svg>Длина</b><div class="ctl length-ctl">
-              <div class="slider"><input type="range" aria-label="Длительность в минутах" id="minutes" min="1" max="15" step="1" value="1"><span class="mval" id="mval">1 мин</span></div>
-              <div class="chips"><button type="button" class="chip" data-m="1">1</button><button type="button" class="chip" data-m="10">10</button><button type="button" class="chip" data-m="15">15</button></div></div></div>
           </section>
 
-          <section class="card story-details" aria-labelledby="h-story">
-            <header class="card-head"><span class="step">2</span><div><h2 id="h-story">Сюжет</h2><p>Жанр и настроение истории</p></div></header>
-            <div class="row"><b><svg class="ic"><use href="#i-book"/></svg>Жанр</b><div class="ctl"><div class="seg" id="genres"></div><label class="custom-description" id="custom-genre-field" hidden>Ваш жанр<textarea id="custom-genre" maxlength="600" placeholder="Например: ироничный детектив с элементами фантастики"></textarea></label></div></div>
-            <div class="row"><b><svg class="ic"><use href="#i-wave"/></svg>Тон</b><div class="ctl"><div class="seg" id="tones"></div></div></div>
+          <!-- 2. Сюжет -->
+          <section class="card" aria-labelledby="h-story">
+            <header class="card-head"><span class="step">2</span><h2 id="h-story">Сюжет</h2></header>
+            <div class="group">
+              <h3><svg class="ic"><use href="#i-book"/></svg>Жанр</h3>
+              <div class="tiles tiles-icons" id="genres"></div>
+              <label class="custom-description" id="custom-genre-field" hidden>Опишите свой жанр<textarea id="custom-genre" maxlength="600" placeholder="Например: ироничный детектив с элементами фантастики"></textarea></label>
+            </div>
+            <div class="group">
+              <h3><svg class="ic"><use href="#i-wave"/></svg>Тон</h3>
+              <div class="seg" id="tones"></div>
+            </div>
             <div class="extra" id="extra">
-              <div class="row"><b>Рассказчик</b><div class="ctl"><div class="seg" id="narrators"></div></div></div>
-              <div class="row"><b>Финал</b><div class="ctl"><div class="seg" id="endings"></div></div></div>
-              <div class="row"><b>Аудитория</b><div class="ctl"><div class="seg" id="audiences"></div></div></div>
-              <div class="row"><b>Пожелания</b><div class="ctl"><textarea aria-label="Пожелания к сюжету" id="notes" maxlength="600" placeholder="Герои, события, место, поворот, мораль… (необязательно)"></textarea></div></div>
+              <div class="group"><h3>Рассказчик</h3><div class="seg" id="narrators"></div></div>
+              <div class="group"><h3>Финал</h3><div class="seg" id="endings"></div></div>
+              <div class="group"><h3>Аудитория</h3><div class="seg" id="audiences"></div></div>
+              <div class="group"><h3>Пожелания</h3><textarea aria-label="Пожелания к сюжету" id="notes" maxlength="600" placeholder="Герои, события, место, поворот, мораль… (необязательно)"></textarea></div>
             </div>
             <button type="button" class="more" id="morebtn" aria-expanded="false" aria-controls="extra">Ещё настройки сюжета ▾</button>
           </section>
 
-          <section class="card style-stage production-stage" aria-labelledby="h-visual">
-            <header class="card-head"><span class="step">3</span><div><h2 id="h-visual">Визуал</h2><p>Стиль кадров, референсы и анимация</p></div></header>
-            <div class="row"><b><svg class="ic"><use href="#i-palette"/></svg>Стиль</b><div class="ctl"><div class="seg" id="styles"></div><label class="custom-description" id="custom-style-field" hidden>Опишите визуальный стиль<textarea id="custom-style" maxlength="600" placeholder="Например: тёплая акварель, мягкие контуры, вечерний свет"></textarea></label></div></div>
-            <div class="row"><b><svg class="ic"><use href="#i-image"/></svg>Референсы</b><div class="ctl references">
-              <div class="reference-item"><input type="file" id="reffile" accept="image/jpeg,image/png,image/webp" aria-label="Добавить референс персонажа"><label class="reference-button" id="ref" for="reffile">＋ Персонаж</label><button class="chip" id="refrm" type="button" hidden>Удалить</button></div>
-              <div class="reference-item"><input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp" aria-label="Добавить референс сцены"><label class="reference-button" id="scene-ref" for="scene-file">＋ Сцена</label><button class="chip" id="scene-rm" type="button" hidden>Удалить</button></div>
-              <span class="hint">необязательно · герой и место будут похожи на картинку</span></div></div>
+          <!-- 3. Визуал -->
+          <section class="card" aria-labelledby="h-visual">
+            <header class="card-head"><span class="step">3</span><h2 id="h-visual">Визуал</h2></header>
+            <div class="group">
+              <h3><svg class="ic"><use href="#i-palette"/></svg>Стиль</h3>
+              <div class="tiles tiles-styles" id="styles"></div>
+              <label class="custom-description" id="custom-style-field" hidden>Опишите визуальный стиль<textarea id="custom-style" maxlength="600" placeholder="Например: тёплая акварель, мягкие контуры, вечерний свет"></textarea></label>
+            </div>
+            <div class="group">
+              <h3><svg class="ic"><use href="#i-image"/></svg>Референсы <small>необязательно</small></h3>
+              <div class="tiles tiles-2">
+                <div class="reference-item"><input type="file" id="reffile" accept="image/jpeg,image/png,image/webp" aria-label="Добавить референс персонажа">
+                  <label class="drop" for="reffile"><svg><use href="#i-user"/></svg><span><b id="ref">Персонаж</b><small>герой будет похож на фото</small></span></label>
+                  <button class="chip" id="refrm" type="button" hidden>Убрать</button></div>
+                <div class="reference-item"><input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp" aria-label="Добавить референс сцены">
+                  <label class="drop" for="scene-file"><svg><use href="#i-mountain"/></svg><span><b id="scene-ref">Место действия</b><small>фон и атмосфера как на фото</small></span></label>
+                  <button class="chip" id="scene-rm" type="button" hidden>Убрать</button></div>
+              </div>
+            </div>
             <div id="animation-settings">
-              <div class="row"><b><svg class="ic"><use href="#i-play"/></svg>Анимация</b><div class="ctl"><div class="seg">
-                <input type="radio" name="animate" id="a0" value="none"><label for="a0">Нет</label>
-                <input type="radio" name="animate" id="a1" value="key" checked><label for="a1">Ключевые сцены</label>
-                <input type="radio" name="animate" id="a2" value="all"><label for="a2">Все сцены</label></div></div></div>
-              <div class="row"><b><svg class="ic"><use href="#i-spark"/></svg>Модель</b><div class="ctl"><div class="seg seg-cards" id="vmodels"></div></div></div>
-              <div class="row" id="exactrow" style="display:none"><b><svg class="ic"><use href="#i-target"/></svg>Сходство</b><div class="ctl"><div class="seg">
-                <input type="radio" name="exact" id="e0" value="0" checked><label for="e0">Похоже</label>
-                <input type="radio" name="exact" id="e1" value="1"><label for="e1">Точное +$</label></div></div></div>
-              <div class="row"><b><svg class="ic"><use href="#i-tag"/></svg>Бюджет</b><div class="ctl price-in"><span class="money-in">$<input type="number" aria-label="Бюджет ролика в долларах" id="maxprice" min="0.05" step="0.05" placeholder="авто"></span><span class="hint">максимум на ролик с учётом повторов</span></div></div>
+              <div class="group">
+                <h3><svg class="ic"><use href="#i-spark"/></svg>Анимация сцен</h3>
+                <div class="tiles tiles-3">
+                  <input type="radio" name="animate" id="a0" value="none"><label class="tile option" for="a0"><b>Без анимации</b><small>кадры с движением камеры, дешевле всего</small></label>
+                  <input type="radio" name="animate" id="a1" value="key" checked><label class="tile option" for="a1"><b>Ключевые сцены</b><small>оживают самые важные моменты</small></label>
+                  <input type="radio" name="animate" id="a2" value="all"><label class="tile option" for="a2"><b>Все сцены</b><small>максимум движения в пределах бюджета</small></label>
+                </div>
+              </div>
+              <div class="group">
+                <h3><svg class="ic"><use href="#i-cpu"/></svg>Модель анимации</h3>
+                <div class="list" id="vmodels"></div>
+              </div>
+              <div class="group" id="exactrow" style="display:none">
+                <h3>Сходство с персонажем</h3>
+                <div class="seg">
+                  <input type="radio" name="exact" id="e0" value="0" checked><label for="e0">Похоже</label>
+                  <input type="radio" name="exact" id="e1" value="1"><label for="e1">Точное · дороже</label></div>
+              </div>
+              <div class="group budget">
+                <h3><svg class="ic"><use href="#i-tag"/></svg>Бюджет на ролик</h3>
+                <div class="money-in">$<input type="number" aria-label="Бюджет ролика в долларах" id="maxprice" min="0.05" step="0.05" placeholder="авто"></div>
+                <small class="hint">Пусто — подберётся автоматически. Повторы уже готовых частей бесплатны.</small>
+              </div>
             </div>
           </section>
 
-          <section class="card voice-stage" aria-labelledby="h-voice">
-            <header class="card-head"><span class="step">4</span><div><h2 id="h-voice">Озвучка</h2><p>Голос рассказчика — нажмите ▶, чтобы послушать</p></div></header>
-            <div class="row"><b><svg class="ic"><use href="#i-mic"/></svg>Голос</b><div class="ctl voice-ctl"><div class="seg" id="providers"></div><div class="seg" id="genders"></div>
-              <div class="voice-pick"><select id="voice" aria-label="Голос"></select><button type="button" class="play" id="play" title="Прослушать">▶</button></div></div></div>
+          <!-- 4. Озвучка -->
+          <section class="card" aria-labelledby="h-voice">
+            <header class="card-head"><span class="step">4</span><h2 id="h-voice">Озвучка</h2></header>
+            <div class="voice-head">
+              <div class="seg" id="providers"></div>
+              <div class="seg" id="genders"></div>
+            </div>
+            <select id="voice" aria-label="Голос" hidden></select>
+            <div class="voices" id="voice-list" role="radiogroup" aria-label="Голос"></div>
           </section>
 
-          <section class="card captions-stage" aria-labelledby="h-captions">
-            <header class="card-head"><span class="step">5</span><div><h2 id="h-captions">Субтитры</h2><p>Текст озвучки на экране — пример бесплатный</p></div></header>
-            <div class="subtitle-modes" aria-label="Оформление субтитров"><button type="button" data-caption="off">Без субтитров</button><button type="button" data-caption="single">Один цвет</button><button type="button" data-caption="cycle">Смена цветов</button></div>
-            <div class="subtitle-row">
-              <div class="subtitle-control">
-                <label class="sr-only" for="subtitle-mode">Режим субтитров</label>
-                <select id="subtitle-mode"><option value="off">Выключены</option><option value="single">Один цвет</option><option value="cycle">Новый блок — новый цвет</option></select>
-              </div>
-              <div class="subtitle-editor" id="subtitle-editor" hidden>
-                <div class="subtitle-options">
-                  <label class="subtitle-field" id="subtitle-single">Цвет текста<input type="color" id="subtitle-color" value="#ffffff"></label>
-                  <div id="subtitle-palette-settings" hidden>
-                    <label class="subtitle-field">Палитра<select id="subtitle-preset"><option value="bright">Яркая</option><option value="pastel">Пастельная</option><option value="warm">Тёплая</option><option value="custom">Своя</option></select></label>
-                    <div class="subtitle-palette" aria-label="Цвета сменяются по кругу">
-                      <input type="color" data-sub-color value="#ffffff" aria-label="Цвет блока 1">
-                      <input type="color" data-sub-color value="#ffd166" aria-label="Цвет блока 2">
-                      <input type="color" data-sub-color value="#62e6b5" aria-label="Цвет блока 3">
-                      <input type="color" data-sub-color value="#7cc8ff" aria-label="Цвет блока 4">
-                      <input type="color" data-sub-color value="#ff92c2" aria-label="Цвет блока 5">
-                    </div>
-                    <p class="hint">Весь блок одного цвета. Новый цвет — при смене текста.</p>
+          <!-- 5. Субтитры -->
+          <section class="card" aria-labelledby="h-captions">
+            <header class="card-head"><span class="step">5</span><h2 id="h-captions">Субтитры</h2></header>
+            <div class="tiles tiles-3 subtitle-modes" aria-label="Оформление субтитров">
+              <button type="button" class="tile sub-mode" data-caption="off"><span class="mini"></span><b>Без субтитров</b></button>
+              <button type="button" class="tile sub-mode" data-caption="single"><span class="mini"><i></i><i></i></span><b>Один цвет</b></button>
+              <button type="button" class="tile sub-mode" data-caption="cycle"><span class="mini cycle"><i></i><i></i></span><b>Смена цветов</b></button>
+            </div>
+            <select id="subtitle-mode" hidden aria-label="Режим субтитров"><option value="off">Выключены</option><option value="single">Один цвет</option><option value="cycle">Новый блок — новый цвет</option></select>
+            <div class="subtitle-editor" id="subtitle-editor" hidden>
+              <div class="subtitle-options">
+                <label class="subtitle-field" id="subtitle-single">Цвет текста<input type="color" id="subtitle-color" value="#ffffff"></label>
+                <div id="subtitle-palette-settings" hidden>
+                  <label class="subtitle-field">Палитра<select id="subtitle-preset"><option value="bright">Яркая</option><option value="pastel">Пастельная</option><option value="warm">Тёплая</option><option value="custom">Своя</option></select></label>
+                  <div class="subtitle-palette" aria-label="Цвета сменяются по кругу">
+                    <input type="color" data-sub-color value="#ffffff" aria-label="Цвет блока 1">
+                    <input type="color" data-sub-color value="#ffd166" aria-label="Цвет блока 2">
+                    <input type="color" data-sub-color value="#62e6b5" aria-label="Цвет блока 3">
+                    <input type="color" data-sub-color value="#7cc8ff" aria-label="Цвет блока 4">
+                    <input type="color" data-sub-color value="#ff92c2" aria-label="Цвет блока 5">
                   </div>
-                  <label class="subtitle-range" for="subtitle-size"><span>Размер <output id="subtitle-size-value">54</output></span><input id="subtitle-size" type="range" min="28" max="96" step="2" value="54"></label>
-                  <label class="subtitle-range" for="subtitle-position"><span>Положение сверху <output id="subtitle-position-value">78%</output></span><input id="subtitle-position" type="range" min="15" max="85" value="78"></label>
-                  <div class="subtitle-positions chips"><button type="button" class="chip" data-sub-position="25">Сверху</button><button type="button" class="chip" data-sub-position="50">В центре</button><button type="button" class="chip" data-sub-position="78">Снизу</button></div>
-                  <details class="subtitle-details"><summary>Точная настройка</summary>
-                    <label class="subtitle-range" for="subtitle-width"><span>Ширина блока <output id="subtitle-width-value">86%</output></span><input id="subtitle-width" type="range" min="50" max="92" value="86"></label>
-                    <label class="subtitle-range" for="subtitle-words"><span>Слов в блоке, примерно <output id="subtitle-words-value">10</output></span><input id="subtitle-words" type="range" min="2" max="18" step="2" value="10"></label>
-                    <label class="subtitle-range" for="subtitle-spacing"><span>Межстрочный интервал <output id="subtitle-spacing-value">1.2</output></span><input id="subtitle-spacing" type="range" min="1.05" max="1.6" step="0.05" value="1.2"></label>
-                    <label class="subtitle-range" for="subtitle-outline"><span>Толщина обводки <output id="subtitle-outline-value">2</output></span><input id="subtitle-outline" type="range" min="1" max="5" value="2"></label>
-                    <label class="subtitle-field">Цвет обводки<select id="subtitle-outline-mode"><option value="auto">Контрастный автоматически</option><option value="custom">Свой цвет</option></select><input type="color" id="subtitle-outline-color" value="#101014" aria-label="Свой цвет обводки" hidden></label>
-                    <label class="subtitle-range" for="subtitle-background"><span>Затемнение под текстом <output id="subtitle-background-value">0%</output></span><input id="subtitle-background" type="range" min="0" max="85" step="5" value="0"></label>
-                    <label class="subtitle-check"><input type="checkbox" id="subtitle-uppercase">Все буквы заглавные</label>
-                    <label class="subtitle-check"><input type="checkbox" id="subtitle-captions">Сохранить крупные подписи сцен</label>
-                  </details>
-                  <label class="subtitle-field">Синхронизация<select id="subtitle-timing"><option value="phrase">По фразам</option><option value="words" id="subtitle-word-option" disabled>По словам — нужен локальный модуль</option></select></label>
-                  <div class="subtitle-presets"><label for="subtitle-saved">Мои оформления</label><select id="subtitle-saved"><option value="">Выбрать…</option></select><input id="subtitle-preset-name" aria-label="Название оформления" maxlength="40" placeholder="Название"><button class="chip" id="subtitle-save-preset" type="button">Сохранить</button><button class="chip" id="subtitle-delete-preset" type="button">Удалить</button><span id="subtitle-preset-status" class="hint" role="status"></span></div>
-                  <button type="button" class="more" id="subtitle-reset">Сбросить оформление</button>
                 </div>
-                <div class="subtitle-preview-wrap">
-                  <img id="subtitle-preview" alt="Предпросмотр субтитров на светлом и тёмном фоне" width="360" height="640">
-                  <button type="button" class="chip" id="subtitle-next">Следующий блок →</button>
-                  <p class="hint" id="subtitle-preview-status" role="status">Предпросмотр бесплатный</p>
-                </div>
+                <label class="subtitle-range" for="subtitle-size"><span>Размер <output id="subtitle-size-value">54</output></span><input id="subtitle-size" type="range" min="28" max="96" step="2" value="54"></label>
+                <label class="subtitle-range" for="subtitle-position"><span>Положение <output id="subtitle-position-value">78%</output></span><input id="subtitle-position" type="range" min="15" max="85" value="78"></label>
+                <div class="presets"><button type="button" class="chip" data-sub-position="25">Сверху</button><button type="button" class="chip" data-sub-position="50">По центру</button><button type="button" class="chip" data-sub-position="78">Снизу</button></div>
+                <details class="subtitle-details"><summary>Точная настройка</summary>
+                  <label class="subtitle-range" for="subtitle-width"><span>Ширина блока <output id="subtitle-width-value">86%</output></span><input id="subtitle-width" type="range" min="50" max="92" value="86"></label>
+                  <label class="subtitle-range" for="subtitle-words"><span>Слов в блоке <output id="subtitle-words-value">10</output></span><input id="subtitle-words" type="range" min="2" max="18" step="2" value="10"></label>
+                  <label class="subtitle-range" for="subtitle-spacing"><span>Межстрочный интервал <output id="subtitle-spacing-value">1.2</output></span><input id="subtitle-spacing" type="range" min="1.05" max="1.6" step="0.05" value="1.2"></label>
+                  <label class="subtitle-range" for="subtitle-outline"><span>Обводка <output id="subtitle-outline-value">2</output></span><input id="subtitle-outline" type="range" min="1" max="5" value="2"></label>
+                  <label class="subtitle-field">Цвет обводки<select id="subtitle-outline-mode"><option value="auto">Автоматически</option><option value="custom">Свой</option></select><input type="color" id="subtitle-outline-color" value="#101014" aria-label="Свой цвет обводки" hidden></label>
+                  <label class="subtitle-range" for="subtitle-background"><span>Подложка <output id="subtitle-background-value">0%</output></span><input id="subtitle-background" type="range" min="0" max="85" step="5" value="0"></label>
+                  <label class="subtitle-check"><input type="checkbox" id="subtitle-uppercase">Заглавные буквы</label>
+                  <label class="subtitle-check"><input type="checkbox" id="subtitle-captions">Оставить крупные подписи сцен</label>
+                  <label class="subtitle-field">Синхронизация<select id="subtitle-timing"><option value="phrase">По фразам</option><option value="words" id="subtitle-word-option" disabled>По словам</option></select></label>
+                </details>
+                <div class="subtitle-presets"><select id="subtitle-saved" aria-label="Мои оформления"><option value="">Мои оформления…</option></select><input id="subtitle-preset-name" aria-label="Название оформления" maxlength="40" placeholder="Название"><button class="chip" id="subtitle-save-preset" type="button">Сохранить</button><button class="chip" id="subtitle-delete-preset" type="button">Удалить</button><span id="subtitle-preset-status" class="hint" role="status"></span></div>
+                <button type="button" class="more" id="subtitle-reset">Сбросить оформление</button>
+              </div>
+              <div class="subtitle-preview-wrap">
+                <img id="subtitle-preview" alt="Пример субтитров" width="360" height="640">
+                <button type="button" class="chip" id="subtitle-next">Следующий блок →</button>
+                <p class="hint" id="subtitle-preview-status" role="status">Пример бесплатный</p>
               </div>
             </div>
           </section>
         </div>
 
         <div id="music-workspace" class="card soon-card" hidden>
-          <svg class="soon-ic"><use href="#i-music"/></svg>
+          <span class="soon-ic"><svg><use href="#i-music"/></svg></span>
           <h2>Музыка — скоро</h2>
-          <p>Клипы под ваш трек: загрузите музыку, а студия соберёт видео в ритм. Раздел в разработке.</p>
-          <span class="soon">скоро</span>
+          <p>Клипы под ваш трек: загрузите музыку, а студия соберёт видео в ритм.</p>
         </div>
       </div>
 
       <aside class="summary" id="checkout" aria-label="Итог">
         <div class="summary-card">
-          <p class="summary-label">Итого</p>
-          <div class="price-big"><span id="price-big">—</span><small>примерная цена</small></div>
-          <div class="scene-summary" id="scene-summary" aria-live="polite">Рассчитываю сцены…</div>
+          <div class="price-line"><span class="summary-label">Стоимость</span><span class="price-big" id="price-big">—</span></div>
+          <div class="scene-summary" id="scene-summary" aria-live="polite"></div>
           <ul class="summary-list" id="summary-list"></ul>
-          <label class="review-choice"><input type="checkbox" id="review-script" checked><span>Сначала показать сценарий для правки</span></label>
+          <label class="review-choice"><input type="checkbox" id="review-script" checked><span>Показать сценарий перед сборкой</span></label>
           <div class="err" id="err" role="alert"></div>
-          <button type="button" class="go" id="go" disabled><svg><use href="#i-spark"/></svg>Создать ролик<small id="est"></small></button>
+          <button type="button" class="go" id="go" disabled>Создать ролик<small id="est"></small></button>
           <p class="note" id="note" aria-live="polite"></p>
         </div>
       </aside>
@@ -196,10 +256,10 @@
   </section>
 
   <section id="project-history" class="history">
-    <div class="head2"><h2><svg class="ic"><use href="#i-film"/></svg>Мои ролики</h2><span id="spent"></span></div>
+    <div class="head2"><h2>Мои ролики</h2><span id="spent"></span></div>
     <div class="history-controls">
-      <label class="search"><svg class="ic"><use href="#i-search"/></svg><input id="history-search" type="search" aria-label="Поиск роликов" placeholder="Найти ролик…"></label>
-      <select id="history-status" aria-label="Фильтр роликов"><option value="all">Все ролики</option><option value="draft">Сценарии</option><option value="done">Готовые</option><option value="running">В работе</option><option value="error">С ошибками</option><option value="deleted">Корзина</option></select>
+      <label class="search"><svg class="ic"><use href="#i-search"/></svg><input id="history-search" type="search" aria-label="Поиск роликов" placeholder="Найти ролик"></label>
+      <select id="history-status" aria-label="Фильтр роликов"><option value="all">Все</option><option value="draft">Сценарии</option><option value="done">Готовые</option><option value="running">В работе</option><option value="error">С ошибками</option><option value="deleted">Корзина</option></select>
     </div>
     <div class="grid" id="grid"></div>
     <button type="button" class="btn history-more" id="history-more" hidden>Показать ещё</button>
@@ -211,19 +271,20 @@
   <div class="side">
     <h3 id="dt"></h3>
     <div class="costrow"><span id="dcost"></span><span id="dinfo"></span></div>
+    <a class="btn main wide" id="dzip"><svg class="ic"><use href="#i-download"/></svg>Скачать всё</a>
     <div class="btns">
-      <a class="btn main" id="dzip"><svg class="ic"><use href="#i-download"/></svg>Скачать всё</a>
       <a class="btn" id="dvid" download><svg class="ic"><use href="#i-video"/></svg>Видео</a>
       <a class="btn" id="dcov" download><svg class="ic"><use href="#i-image"/></svg>Обложка</a>
+      <a class="btn" id="dsrt" download hidden>SRT</a>
+      <a class="btn" id="dass" download hidden>ASS</a>
     </div>
-    <div class="btns"><a class="btn" id="dsrt" download hidden>Субтитры SRT</a><a class="btn" id="dass" download hidden>Субтитры ASS</a></div>
-    <div class="btns secondary"><button type="button" class="btn" id="edit-script"><svg class="ic"><use href="#i-edit"/></svg>Сценарий</button><button type="button" class="btn" id="edit-subtitles"><svg class="ic"><use href="#i-captions"/></svg>Субтитры</button><button type="button" class="btn danger" id="trash-job"><svg class="ic"><use href="#i-trash"/></svg>В корзину</button></div>
     <div class="tabs" id="tabs">
       <button type="button" data-f="youtube" class="on">YouTube</button><button type="button" data-f="instagram">Instagram</button>
       <button type="button" data-f="tiktok">TikTok</button><button type="button" data-f="facebook">Facebook</button>
     </div>
     <div class="fields" id="fields"></div>
     <p class="dialog-status" id="dialog-status" role="status"></p>
+    <div class="btns quiet"><button type="button" class="btn ghost" id="edit-script"><svg class="ic"><use href="#i-edit"/></svg>Сценарий</button><button type="button" class="btn ghost" id="edit-subtitles"><svg class="ic"><use href="#i-captions"/></svg>Субтитры</button><button type="button" class="btn ghost danger" id="trash-job"><svg class="ic"><use href="#i-trash"/></svg>Удалить</button></div>
   </div>
   <button type="button" class="x" id="close-dialog" aria-label="Закрыть">×</button>
 </div></dialog>
@@ -238,16 +299,16 @@
 </dialog>
 
 <dialog id="script-dialog" aria-labelledby="script-heading"><div class="editor-shell">
-  <div class="editor-heading"><h2 id="script-heading">Сценарий и сцены</h2><button type="button" class="x" id="script-close" aria-label="Закрыть редактор сценария">×</button></div>
+  <div class="editor-heading"><h2 id="script-heading">Сценарий</h2><button type="button" class="x" id="script-close" aria-label="Закрыть редактор сценария">×</button></div>
   <label class="editor-title">Название<input id="script-title" maxlength="200"></label>
-  <p class="hint">Исправьте текст и описание кадров. При сборке оплачиваются только недостающие материалы в пределах остатка лимита.</p>
+  <p class="hint">Поправьте текст и описание кадров. При сборке оплачиваются только недостающие материалы.</p>
   <div id="script-scenes"></div><p id="script-status" role="status"></p>
-  <div class="editor-actions"><button type="button" class="btn danger" id="script-trash">В корзину</button><span class="grow"></span><button type="button" class="btn" id="script-save">Сохранить</button><button type="button" class="btn main" id="script-render">Собрать видео</button></div>
+  <div class="editor-actions"><button type="button" class="btn ghost danger" id="script-trash">Удалить</button><span class="grow"></span><button type="button" class="btn" id="script-save">Сохранить</button><button type="button" class="btn main" id="script-render">Собрать видео</button></div>
 </div></dialog>
 
 <dialog id="subtitle-dialog" aria-labelledby="subtitle-heading"><div class="editor-shell">
-  <div class="editor-heading"><h2 id="subtitle-heading">Правка субтитров</h2><button type="button" class="x" id="subtitle-edit-close" aria-label="Закрыть редактор субтитров">×</button></div>
-  <p class="hint">Исправьте текст и время в формате SRT. Оформление — из блока «Субтитры». Перемонтаж бесплатный: используются уже сохранённые материалы.</p>
+  <div class="editor-heading"><h2 id="subtitle-heading">Субтитры</h2><button type="button" class="x" id="subtitle-edit-close" aria-label="Закрыть редактор субтитров">×</button></div>
+  <p class="hint">Текст и время в формате SRT. Оформление — из шага «Субтитры». Перемонтаж бесплатный.</p>
   <textarea id="subtitle-srt-editor" aria-label="Текст и время SRT" spellcheck="false"></textarea>
   <p id="subtitle-edit-status" role="status"></p>
   <div class="editor-actions"><span class="grow"></span><button type="button" class="btn main" id="subtitle-remount">Применить и перемонтировать</button></div>

@@ -4,30 +4,71 @@ const $ = s => document.querySelector(s);
 const val = n => document.querySelector(`input[name=${n}]:checked`).value;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money = x => "$" + Number(x || 0).toFixed(2);
+const icon = (name, cls = "") => `<svg class="${cls}"><use href="#${name}"/></svg>`;
 const dlg = $("#dlg");
 
 let OPT = null;
 const mins = () => +$("#minutes").value;
 const FLAGS = {ru: "🇷🇺", kk: "🇰🇿", en: "🇬🇧", de: "🇩🇪"};
+const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
+const GENRE_ICONS = {auto: "i-spark", survival: "i-compass", story: "i-book", horror: "i-ghost", mystery: "i-search",
+  comedy: "i-smile", facts: "i-bulb", motivation: "i-trend", fairy: "i-wand", scifi: "i-rocket", adventure: "i-map",
+  drama: "i-mask", romance: "i-heart", documentary: "i-doc", education: "i-cap", custom: "i-pen"};
+// мини-превью стиля: цветовая подложка плитки
+const STYLE_SWATCH = {
+  "2d": "linear-gradient(135deg,#f6c96b,#e2725b 55%,#3b4a7a)", "3d": "radial-gradient(circle at 35% 35%,#ffe3b3,#d98c5f 45%,#5b3a6e)",
+  anime: "linear-gradient(160deg,#ffd1e8,#a5b4ff 60%,#5d6bd8)", real: "linear-gradient(160deg,#c9b8a3,#6b5e52 55%,#2b2622)",
+  comic: "repeating-radial-gradient(circle at 30% 30%,#ffd54a 0 3px,#ff7a59 3px 6px)", watercolor: "radial-gradient(circle at 30% 40%,#bfe4ff,#f7d6e6 50%,#fdf3d7)",
+  clay: "radial-gradient(circle at 40% 35%,#ffb38a,#d0654a 55%,#7a3b2c)", pixel: "conic-gradient(#5eead4 0 25%,#818cf8 0 50%,#f472b6 0 75%,#facc15 0)",
+  noir: "linear-gradient(135deg,#e5e5e5,#6b6b6b 45%,#111)", paper: "linear-gradient(135deg,#f4e9d8,#d9c3a1 60%,#a98b62)",
+  custom: "linear-gradient(135deg,#2a2c33,#3a3d46)"};
+
 function setMins(m) {
   $("#minutes").value = m; $("#mval").textContent = m + " мин";
   document.querySelectorAll(".chip[data-m]").forEach(c => c.classList.toggle("on", +c.dataset.m === m));
   if (OPT) estimate();
 }
+const radio = (name, v, checked) => `<input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${v === checked ? "checked" : ""}>`;
 const seg = (id, name, items, checked) => $(id).innerHTML = Object.entries(items).map(([v, l]) =>
-  `<input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${v === checked ? "checked" : ""}><label for="${name}-${v}">${l}</label>`).join("");
+  `${radio(name, v, checked)}<label for="${name}-${v}">${l}</label>`).join("");
+// плитки: [значение, содержимое] → радио + оформленная метка
+const tiles = (id, name, entries, checked, cls) => $(id).innerHTML = entries.map(([v, body]) =>
+  `${radio(name, v, checked)}<label class="tile ${cls}" for="${name}-${v}">${body}</label>`).join("");
+
 function voices() {
   const p = OPT.voices[val("provider")], list = p[val("gender")];
-  $("#voice").innerHTML = list.map(v => `<option value="${v}" ${v === p.default ? "selected" : ""}>${v[0].toUpperCase() + v.slice(1)}</option>`).join("");
+  $("#voice").innerHTML = list.map(v => `<option value="${v}" ${v === p.default ? "selected" : ""}>${v}</option>`).join("");
+  if (!list.includes($("#voice").value)) $("#voice").value = list[0];
+  $("#voice-list").innerHTML = list.map(v => `<div class="voice" data-voice="${esc(v)}">
+    <button type="button" class="voice-pick" role="radio" aria-checked="false">${esc(v[0].toUpperCase() + v.slice(1))}</button>
+    <button type="button" class="voice-play" aria-label="Прослушать ${esc(v)}">${icon("i-play")}</button></div>`).join("");
+  syncVoices();
 }
+function syncVoices() {
+  document.querySelectorAll("#voice-list .voice").forEach(el => {
+    const on = el.dataset.voice === $("#voice").value;
+    el.classList.toggle("on", on); el.querySelector(".voice-pick").setAttribute("aria-checked", String(on));
+  });
+}
+$("#voice-list").onclick = e => {
+  const tile = e.target.closest(".voice"); if (!tile) return;
+  if (e.target.closest(".voice-play")) return playVoice(tile.dataset.voice, e.target.closest(".voice-play"));
+  $("#voice").value = tile.dataset.voice;
+  $("#voice").dispatchEvent(new Event("change", {bubbles: true}));
+};
+
 async function init() {
   OPT = await fetch("/api/options").then(r => r.json());
-  if (OPT.word_timing) { $("#subtitle-word-option").disabled=false; $("#subtitle-word-option").textContent="По словам · локальная обработка"; }
-  seg("#langs", "lang", Object.fromEntries(Object.entries(OPT.langs).map(([k, v]) => [k, `${FLAGS[k] || ""} ${v}`])), "ru");
-  seg("#genres", "genre", OPT.genres, "auto");
+  if (OPT.word_timing) { $("#subtitle-word-option").disabled = false; $("#subtitle-word-option").textContent = "По словам"; }
+  tiles("#langs", "lang", Object.keys(OPT.langs).map(k =>
+    [k, `<span class="flag">${FLAGS[k] || ""}</span><b>${OPT.langs[k]}</b><small>${LANG_NAMES[k] || ""}</small>`]), "ru", "tile-lang");
+  tiles("#genres", "genre", Object.entries(OPT.genres).map(([k, l]) =>
+    [k, `${icon(GENRE_ICONS[k] || "i-book", "tile-ic")}<b>${esc(l)}</b>`]), "auto", "tile-icon");
   seg("#tones", "tone", OPT.tones, "auto");
-  seg("#vmodels", "vmodel", Object.fromEntries(Object.entries(OPT.video_models).map(([k, v]) =>
-    [k, `${v.label}<small>${v.note} · $${v.price.toFixed(2)}</small>`])), "wan");
+  tiles("#styles", "style", Object.entries(OPT.styles).map(([k, l]) =>
+    [k, `<span class="swatch" style="background:${STYLE_SWATCH[k] || STYLE_SWATCH.custom}">${k === "custom" ? icon("i-plus") : ""}</span><b>${esc(l.replace(" мультфильм", ""))}</b>`]), "2d", "tile-style");
+  tiles("#vmodels", "vmodel", Object.entries(OPT.video_models).map(([k, v]) =>
+    [k, `<span class="dot"></span><b>${esc(v.label)}</b><small>${esc(v.note)}</small><em>${money(v.price)} <i>за сцену</i></em>`]), "pvideo", "row-option");
   let priceTimer;
   $("#maxprice").oninput = () => { clearTimeout(priceTimer); priceTimer = setTimeout(estimate, 300); };
   seg("#narrators", "narrator", OPT.narrators, "auto");
@@ -36,34 +77,35 @@ async function init() {
   $("#morebtn").onclick = () => { const o = $("#extra").classList.toggle("open");
     $("#morebtn").setAttribute("aria-expanded", String(o));
     $("#morebtn").textContent = o ? "Скрыть настройки сюжета ▴" : "Ещё настройки сюжета ▾"; };
-  seg("#styles", "style", Object.fromEntries(Object.entries(OPT.styles).map(([k, v]) => [k, v.replace(" мультфильм", "")])), "2d");
   seg("#providers", "provider", Object.fromEntries(Object.entries(OPT.voices).map(([k, v]) => [k, v.label])), "gemini");
+  seg("#genders", "gender", {male: "Мужские", female: "Женские"}, "male");
   $("#minutes").oninput = () => setMins(mins());
   document.querySelectorAll(".chip[data-m]").forEach(c => c.onclick = () => setMins(+c.dataset.m));
-  seg("#genders", "gender", {male: "Мужской", female: "Женский"}, "male");
   voices();
   document.querySelectorAll(".panel input[type=radio]").forEach(i => i.onchange = () => {
     if (["provider", "gender", "lang"].includes(i.name)) stopAudio();
     if (i.name === "provider" || i.name === "gender") voices();
     estimate(); });
   restorePreferences();
+  syncVoices();
+  setMins(mins());
   setupStudio();
   setupCustomChoices();
   $("#go").disabled = false;
   await estimate();
 }
+
 let estimateController;
 function summary() {
   const label = (name, items) => { const v = val(name); const x = items?.[v]; return typeof x === "string" ? x : x?.label || v; };
   const rows = [
-    ["i-screen", val("format") === "vertical" ? "Вертикально 9:16" : "Горизонтально 16:9"],
-    ["i-clock", mins() + " мин"],
-    ["i-globe", `${FLAGS[val("lang")] || ""} ${label("lang", OPT.langs)}`],
+    ["i-film", `${val("format") === "vertical" ? "9:16" : "16:9"} · ${mins()} мин`],
+    ["i-globe", `${FLAGS[val("lang")] || ""} ${LANG_NAMES[val("lang")] || ""}`],
+    ["i-book", `${label("genre", OPT.genres)} · ${label("tone", OPT.tones).toLowerCase()}`],
     ["i-palette", label("style", OPT.styles)],
-    ["i-book", label("genre", OPT.genres)],
-    ["i-mic", `${$("#voice").value || ""} · ${label("provider", Object.fromEntries(Object.entries(OPT.voices).map(([k, v]) => [k, v.label])))}`],
+    ["i-mic", `${$("#voice").value || ""} · ${OPT.voices[val("provider")].label}`],
   ];
-  $("#summary-list").innerHTML = rows.map(([icon, text]) => `<li><svg class="ic"><use href="#${icon}"/></svg>${esc(text)}</li>`).join("");
+  $("#summary-list").innerHTML = rows.map(([i, text]) => `<li>${icon(i, "ic")}<span>${esc(text)}</span></li>`).join("");
 }
 async function estimate() {
   if (!OPT) return;
@@ -80,68 +122,73 @@ async function estimate() {
     if (controller.signal.aborted) return;
     $("#est").textContent = "≈ " + money(r.total);
     $("#price-big").textContent = "≈ " + money(r.total);
-    $("#scene-summary").innerHTML = `<span><strong>${r.scenes}</strong> сцен</span><span><strong>${r.clips || 0}</strong> с анимацией</span>`;
-    $("#note").textContent = "Списывается по факту. Повторы используют уже готовые материалы.";
+    $("#scene-summary").innerHTML = `<span><b>${r.scenes}</b>сцен</span><span><b>${r.clips || 0}</b>с анимацией</span>`;
+    $("#note").textContent = "Списывается по факту";
   } catch (error) {
     if (error.name !== "AbortError") {
       $("#est").textContent = "";
-      $("#note").textContent = "Не удалось рассчитать цену. Попробуйте изменить настройки.";
+      $("#note").textContent = "Не удалось рассчитать цену";
     }
   }
 }
 
-let audio = null;
+let audio = null, audioButton = null;
 function stopAudio() {
   if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); }
   audio = null;
-  $("#play").textContent = "▶";
-  $("#play").classList.remove("busy");
+  if (audioButton) { audioButton.innerHTML = icon("i-play"); audioButton.classList.remove("busy", "playing"); }
+  audioButton = null;
 }
-$("#play").onclick = async () => {
-  if (audio) { stopAudio(); return; }
-  $("#play").classList.add("busy");
-  const sample = audio = new Audio(`/voices/${val("provider")}/${$("#voice").value}_${val("lang")}.mp3`);
-  sample.oncanplay = () => { if (audio === sample) $("#play").classList.remove("busy"); };
+async function playVoice(name, button) {
+  const same = audioButton === button;
+  stopAudio();
+  if (same) return;
+  audioButton = button;
+  button.classList.add("busy", "playing"); button.innerHTML = icon("i-stop");
+  const sample = audio = new Audio(`/voices/${val("provider")}/${name}_${val("lang")}.mp3`);
+  sample.oncanplay = () => { if (audio === sample) button.classList.remove("busy"); };
   sample.onended = sample.onerror = () => { if (audio === sample) stopAudio(); };
-  $("#play").textContent = "■";
   try { await sample.play(); } catch { if (audio === sample) stopAudio(); }
-};
-$("#voice").onchange = () => { stopAudio(); summary(); };
+}
+$("#voice").onchange = () => { syncVoices(); summary(); };
 
 async function balance() {
   const r = await fetch("/api/balance").then(r => r.json()).catch(() => ({}));
-  $("#bal").innerHTML = r.balance != null ? `Баланс <b>${money(r.balance)}</b>` : "—";
+  const el = $("#bal");
+  if (r.balance == null) { el.innerHTML = `${icon("i-wallet")}<span>Баланс</span><b>—</b>`; return; }
+  el.innerHTML = `${icon("i-wallet")}<span>Баланс</span><b>${money(r.balance)}</b>`;
+  el.classList.toggle("low", r.balance < 1);
 }
 
 let refData = null, sceneRefData = null;
-$("#reffile").onchange = e => {
-  const file = e.target.files[0]; if (!file) return;
-  const img = new Image();
-  const imageURL = URL.createObjectURL(file);
+function readImage(input, done) {
+  const file = input.files[0]; if (!file) return;
+  const img = new Image(), url = URL.createObjectURL(file);
   img.onload = () => {
-    URL.revokeObjectURL(imageURL);
+    URL.revokeObjectURL(url);
     const k = Math.min(1, 1024 / Math.max(img.width, img.height)), c = document.createElement("canvas");
     c.width = img.width * k; c.height = img.height * k; c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-    refData = c.toDataURL("image/jpeg", 0.88);
-    $("#ref").textContent = "✓ Персонаж · заменить";
-    $("#refrm").hidden = false;
-    $("#exactrow").style.display = ""; estimate();
+    done(c.toDataURL("image/jpeg", 0.88));
   };
-  img.onerror = () => { URL.revokeObjectURL(imageURL); $("#reffile").value = ""; $("#err").textContent = "Не удалось открыть изображение. Выберите JPG, PNG или WebP."; };
-  img.src = imageURL;
-};
+  img.onerror = () => { URL.revokeObjectURL(url); input.value = ""; $("#err").textContent = "Не удалось открыть изображение. Выберите JPG, PNG или WebP."; };
+  img.src = url;
+}
+function showReference(labelId, removeId, data, text) {
+  const drop = $(labelId).closest(".drop");
+  drop.classList.toggle("has", !!data);
+  drop.style.backgroundImage = data ? `linear-gradient(rgba(14,15,18,.55),rgba(14,15,18,.8)),url(${data})` : "";
+  $(labelId).textContent = text;
+  $(removeId).hidden = !data;
+}
+$("#reffile").onchange = e => readImage(e.target, data => {
+  refData = data; showReference("#ref", "#refrm", data, "Персонаж добавлен");
+  $("#exactrow").style.display = ""; estimate();
+});
 $("#refrm").onclick = e => { e.preventDefault(); e.stopPropagation(); refData = null; $("#reffile").value = "";
-  $("#refrm").hidden = true;
-  $("#ref").textContent = "＋ Персонаж";
+  showReference("#ref", "#refrm", null, "Персонаж");
   $("#exactrow").style.display = "none"; $("#e0").checked = true; estimate(); };
-
-$("#scene-file").onchange = e => {
-  const file=e.target.files[0]; if (!file) return;
-  const img=new Image(), url=URL.createObjectURL(file);
-  img.onload=()=>{ URL.revokeObjectURL(url); const k=Math.min(1,1024/Math.max(img.width,img.height)), c=document.createElement("canvas"); c.width=img.width*k; c.height=img.height*k; c.getContext("2d").drawImage(img,0,0,c.width,c.height); sceneRefData=c.toDataURL("image/jpeg",.88); $("#scene-ref").textContent="✓ Сцена · заменить"; $("#scene-rm").hidden=false; };
-  img.onerror=()=>{ URL.revokeObjectURL(url); e.target.value=""; $("#err").textContent="Не удалось открыть изображение. Выберите JPG, PNG или WebP."; }; img.src=url;
-};
-$("#scene-rm").onclick=()=>{sceneRefData=null; $("#scene-file").value=""; $("#scene-ref").textContent="＋ Сцена"; $("#scene-rm").hidden=true;};
+$("#scene-file").onchange = e => readImage(e.target, data => { sceneRefData = data; showReference("#scene-ref", "#scene-rm", data, "Место добавлено"); });
+$("#scene-rm").onclick = () => { sceneRefData = null; $("#scene-file").value = ""; showReference("#scene-ref", "#scene-rm", null, "Место действия"); };
 
 async function creationKey(body) {
   let signature;

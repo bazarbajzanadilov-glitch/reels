@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from factory import budget, cost, pipeline
-from factory.config import API, JOBS
+from factory.config import API, JOBS, VIDEO_DEFAULT
 from factory.http import request
 import json
 import math
@@ -115,7 +115,7 @@ def process(store, job):
                             ("notes", ""),
                             ("custom_style", ""),
                             ("custom_genre", ""),
-                            ("video_model", "wan"),
+                            ("video_model", VIDEO_DEFAULT),
                             ("max_price", None),
                             ("subtitles", None),
                         ]
