@@ -48,14 +48,26 @@ async function init() {
     estimate(); });
   restorePreferences();
   setupStudio();
-  decorateStudio();
   setupCustomChoices();
   $("#go").disabled = false;
   await estimate();
 }
 let estimateController;
+function summary() {
+  const label = (name, items) => { const v = val(name); const x = items?.[v]; return typeof x === "string" ? x : x?.label || v; };
+  const rows = [
+    ["i-screen", val("format") === "vertical" ? "Вертикально 9:16" : "Горизонтально 16:9"],
+    ["i-clock", mins() + " мин"],
+    ["i-globe", `${FLAGS[val("lang")] || ""} ${label("lang", OPT.langs)}`],
+    ["i-palette", label("style", OPT.styles)],
+    ["i-book", label("genre", OPT.genres)],
+    ["i-mic", `${$("#voice").value || ""} · ${label("provider", Object.fromEntries(Object.entries(OPT.voices).map(([k, v]) => [k, v.label])))}`],
+  ];
+  $("#summary-list").innerHTML = rows.map(([icon, text]) => `<li><svg class="ic"><use href="#${icon}"/></svg>${esc(text)}</li>`).join("");
+}
 async function estimate() {
   if (!OPT) return;
+  summary();
   const ex = refData && val("exact") === "1" ? 1 : 0;
   estimateController?.abort();
   const controller = estimateController = new AbortController();
@@ -67,8 +79,9 @@ async function estimate() {
     const r = await response.json();
     if (controller.signal.aborted) return;
     $("#est").textContent = "≈ " + money(r.total);
-    $("#scene-summary").innerHTML = `<strong>${r.scenes}</strong> сцен <span>${r.clips ? r.clips + " с анимацией" : "Без анимации"}</span>`;
-    $("#note").innerHTML = `Цена ролика ≈ <b>${money(r.total)}</b> · ${r.scenes} сцен` + (r.clips ? ` · ${r.clips} с анимацией` : "");
+    $("#price-big").textContent = "≈ " + money(r.total);
+    $("#scene-summary").innerHTML = `<span><strong>${r.scenes}</strong> сцен</span><span><strong>${r.clips || 0}</strong> с анимацией</span>`;
+    $("#note").textContent = "Списывается по факту. Повторы используют уже готовые материалы.";
   } catch (error) {
     if (error.name !== "AbortError") {
       $("#est").textContent = "";
@@ -93,7 +106,7 @@ $("#play").onclick = async () => {
   $("#play").textContent = "■";
   try { await sample.play(); } catch { if (audio === sample) stopAudio(); }
 };
-$("#voice").onchange = stopAudio;
+$("#voice").onchange = () => { stopAudio(); summary(); };
 
 async function balance() {
   const r = await fetch("/api/balance").then(r => r.json()).catch(() => ({}));
@@ -110,7 +123,7 @@ $("#reffile").onchange = e => {
     const k = Math.min(1, 1024 / Math.max(img.width, img.height)), c = document.createElement("canvas");
     c.width = img.width * k; c.height = img.height * k; c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
     refData = c.toDataURL("image/jpeg", 0.88);
-    $("#ref").textContent = "✓ Персонаж добавлен · заменить";
+    $("#ref").textContent = "✓ Персонаж · заменить";
     $("#refrm").hidden = false;
     $("#exactrow").style.display = ""; estimate();
   };
@@ -119,16 +132,16 @@ $("#reffile").onchange = e => {
 };
 $("#refrm").onclick = e => { e.preventDefault(); e.stopPropagation(); refData = null; $("#reffile").value = "";
   $("#refrm").hidden = true;
-  $("#ref").textContent = "＋ Референс персонажа";
+  $("#ref").textContent = "＋ Персонаж";
   $("#exactrow").style.display = "none"; $("#e0").checked = true; estimate(); };
 
 $("#scene-file").onchange = e => {
   const file=e.target.files[0]; if (!file) return;
   const img=new Image(), url=URL.createObjectURL(file);
-  img.onload=()=>{ URL.revokeObjectURL(url); const k=Math.min(1,1024/Math.max(img.width,img.height)), c=document.createElement("canvas"); c.width=img.width*k; c.height=img.height*k; c.getContext("2d").drawImage(img,0,0,c.width,c.height); sceneRefData=c.toDataURL("image/jpeg",.88); $("#scene-ref").textContent="✓ Сцена добавлена · заменить"; $("#scene-rm").hidden=false; };
+  img.onload=()=>{ URL.revokeObjectURL(url); const k=Math.min(1,1024/Math.max(img.width,img.height)), c=document.createElement("canvas"); c.width=img.width*k; c.height=img.height*k; c.getContext("2d").drawImage(img,0,0,c.width,c.height); sceneRefData=c.toDataURL("image/jpeg",.88); $("#scene-ref").textContent="✓ Сцена · заменить"; $("#scene-rm").hidden=false; };
   img.onerror=()=>{ URL.revokeObjectURL(url); e.target.value=""; $("#err").textContent="Не удалось открыть изображение. Выберите JPG, PNG или WebP."; }; img.src=url;
 };
-$("#scene-rm").onclick=()=>{sceneRefData=null; $("#scene-file").value=""; $("#scene-ref").textContent="＋ Референс сцены"; $("#scene-rm").hidden=true;};
+$("#scene-rm").onclick=()=>{sceneRefData=null; $("#scene-file").value=""; $("#scene-ref").textContent="＋ Сцена"; $("#scene-rm").hidden=true;};
 
 async function creationKey(body) {
   let signature;
@@ -198,6 +211,7 @@ async function load() {
   renderHistory();
 }
 let historyVisible=48;
+const STATUS_LABELS = {done:"Готово", draft:"Сценарий", queued:"В очереди", running:"Создаётся", cancelling:"Останавливается", cancelled:"Остановлено", error:"Ошибка"};
 function renderHistory() {
   const spent = jobs.filter(j => j.cost).reduce((a, j) => a + j.cost.total, 0);
   $("#spent").innerHTML = spent ? `потрачено <b>${money(spent)}</b>` : "";
@@ -205,7 +219,7 @@ function renderHistory() {
   const status=$("#history-status").value;
   const filtered=jobs.filter(j=>(status==="deleted"?!!j.deleted_at:!j.deleted_at) && (status==="all"||status==="deleted"||(status==="running"?["running","queued","cancelling"].includes(j.status):j.status===status)) && String(j.title||j.topic).toLocaleLowerCase().includes(query));
   $("#history-more").hidden=filtered.length<=historyVisible;
-  if (!filtered.length) { lastJobsMarkup = ""; $("#grid").innerHTML = `<div class="empty">${jobs.length?"Нет роликов под этим фильтром":"Здесь появятся готовые ролики"}</div>`; return; }
+  if (!filtered.length) { lastJobsMarkup = ""; $("#grid").innerHTML = `<div class="empty"><svg class="ic"><use href="#i-film"/></svg><b>${jobs.length?"Нет роликов под этим фильтром":"Здесь появятся ваши ролики"}</b><span>${jobs.length?"Измените поиск или фильтр":"Опишите идею выше и нажмите «Создать ролик»"}</span></div>`; return; }
   const markup = filtered.slice(0,historyVisible).map(j => {
     const f = `/files/${j.id}/`, done = j.status === "done";
     const price = j.cost && j.cost.total>0 ? (j.accounting==="pending"?"≥ ":"")+money(j.cost.total) : "≈"+money(j.estimate?.total);
@@ -213,8 +227,9 @@ function renderHistory() {
     const sub = j.deleted_at ? "Восстановить из корзины" : done ? `${L} · ${j.format === "vertical" ? "9:16" : "16:9"} · ${j.minutes} мин`
               : j.status === "draft" ? "Сценарий готов — проверить" : j.status === "error" ? "Ошибка — посмотреть подробности" : j.status === "queued" ? "В очереди" : j.status === "cancelled" ? "Остановлено — можно продолжить" : esc(j.progress);
     return `<button type="button" class="item ${esc(j.status)} ${j.format === "horizontal" ? "h" : ""}" data-job="${esc(j.id)}">
-      <span class="thumb" style="${done ? `background-image:url('${f}cover.jpg')` : ""}">
+      <span class="thumb">${done ? `<img src="${f}cover.jpg" alt="" loading="lazy" decoding="async">` : ""}
         ${["running","queued","cancelling"].includes(j.status) ? '<span class="spin"></span>' : ""}
+        <span class="badge">${j.deleted_at ? "Корзина" : STATUS_LABELS[j.status] || ""}</span>
         <span class="price">${price}</span></span>
       <span class="meta"><span class="t">${esc(j.title || j.topic)}</span><span class="s">${sub}</span>
         ${j.status === "running" ? `<span class="prog"><i style="width:${pct(j.progress)}%"></i></span>` : ""}</span></button>`;
@@ -353,13 +368,6 @@ function setupStudio() {
   function syncCaptions(){captionButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.caption===$('#subtitle-mode').value)));}
   captionButtons.forEach(b=>b.onclick=()=>{ $('#subtitle-mode').value=b.dataset.caption; $('#subtitle-mode').dispatchEvent(new Event('change',{bubbles:true}));syncCaptions(); });
   $('#subtitle-mode').addEventListener('change',syncCaptions); syncCaptions();
-}
-
-function decorateStudio() {
- const paths={cube:'M12 3 3 8v9l9 5 9-5V8z M3 8l9 5 9-5 M12 13v9',frame:'M4 4h16v16H4z M4 15l5-5 4 4 3-3 4 4',pen:'m4 20 4-1L20 7l-4-4L4 15z M13 6l4 4',sound:'M10 4v16 M6 8v8 M2 11v2 M14 7v10 M18 10v4 M22 11v2',captions:'M3 5h18v14H3z M6 12h4 M14 12h4 M6 15h4 M14 15h4',play:'m9 5 10 7-10 7z'};
- const icon=key=>`<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${paths[key]}"/></svg>`;
- document.querySelectorAll('#styles label').forEach((el,i)=>el.insertAdjacentHTML('afterbegin',icon(i===1?'cube':'frame')));
- for(const [selector,key] of [['.idea-stage h2','pen'],['.voice-stage h2','sound'],['.captions-stage h2','captions'],['[data-project="none"]','frame'],['[data-project="animated"]','play'],['[data-project="music"]','sound']]) document.querySelector(selector)?.insertAdjacentHTML('afterbegin',icon(key));
 }
 
 function setupCustomChoices() {

@@ -235,7 +235,9 @@ class Handler(BaseHTTPRequestHandler):
     def end_headers(self):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
-        self.send_header("Cache-Control", "no-store")
+        # по умолчанию ничего не кэшируется; файлы задают свою политику в _file
+        self.send_header("Cache-Control", getattr(self, "_cache_control", None) or "no-store")
+        self._cache_control = None
         super().end_headers()
 
     def do_HEAD(self):
@@ -348,7 +350,7 @@ class Handler(BaseHTTPRequestHandler):
         elif re.fullmatch(
             r"/voices/\w+/[\w-]+\.mp3", u.path
         ):  # готовые пробы голосов, без генерации
-            self._file(ROOT / "web" / u.path.lstrip("/"), "audio/mpeg")
+            self._file(ROOT / "web" / u.path.lstrip("/"), "audio/mpeg", "public, max-age=604800")
         elif u.path == "/api/balance":
             if self._limited("balance", 20):
                 return
@@ -381,10 +383,19 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
-    def _file(self, path: Path, ctype: str):
+    def _file(self, path: Path, ctype: str, cache: str = "private, no-cache"):
+        """Отдаёт файл. ETag позволяет браузеру не скачивать повторно то, что не изменилось (304)."""
         if not path.is_file():
             return self.send_error(404)
-        size = path.stat().st_size
+        stat = path.stat()
+        size = stat.st_size
+        etag = f'"{stat.st_mtime_ns:x}-{size:x}"'
+        if self.headers.get("If-None-Match") == etag and not self.headers.get("Range"):
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self._cache_control = cache
+            self.end_headers()
+            return
         start, end = 0, size - 1
         partial = False
         rng = self.headers.get("Range", "")
@@ -420,6 +431,8 @@ class Handler(BaseHTTPRequestHandler):
         if partial:
             self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
         self.send_header("Content-Type", ctype)
+        self.send_header("ETag", etag)
+        self._cache_control = cache
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Content-Length", str(end - start + 1))
         if path.name in FILES and not ctype.startswith(("video", "image", "audio")):

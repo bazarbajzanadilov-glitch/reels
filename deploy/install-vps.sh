@@ -33,7 +33,10 @@ systemctl daemon-reload
 systemctl enable --now reels-web reels-worker
 systemctl restart reels-web reels-worker
 
-sed "s/reels.ai-studio.kz/$DOMAIN/g" deploy/nginx/reels.ai-studio.kz.conf > "/etc/nginx/sites-available/$DOMAIN.conf"
+# конфиг сайта пишется только при первой установке: потом его дополняет certbot (HTTPS), не затираем
+SITE="/etc/nginx/sites-available/$DOMAIN.conf"
+[ -f "$SITE" ] || sed "s/reels.ai-studio.kz/$DOMAIN/g" deploy/nginx/reels.ai-studio.kz.conf > "$SITE"
+grep -q "gzip on" "$SITE" || sed -i '0,/client_max_body_size 25m;/s//client_max_body_size 25m;\n    gzip on; gzip_comp_level 5; gzip_min_length 1024; gzip_proxied any;\n    gzip_types text\/css application\/javascript text\/javascript application\/json image\/svg+xml;/' "$SITE"
 ln -sf "/etc/nginx/sites-available/$DOMAIN.conf" "/etc/nginx/sites-enabled/$DOMAIN.conf"
 nginx -t
 systemctl reload nginx

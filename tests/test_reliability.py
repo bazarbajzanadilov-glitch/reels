@@ -396,7 +396,6 @@ class RecoveryTests(unittest.TestCase):
 
     def test_completed_render_chunk_is_reused_and_replaced_run_stops(self):
         from factory import render
-        from factory.files import atomic_bytes
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -434,7 +433,7 @@ class RecoveryTests(unittest.TestCase):
             store = JobStore(Path(directory))
             store.put(job())
             store.patch("one", run_id="new", status="running")
-            old = store.audit(
+            store.audit(
                 "one", {"state": "started", "kind": "image", "run_id": "old"}
             )
             self.assertEqual(store.request_summary("one", "new"), {})

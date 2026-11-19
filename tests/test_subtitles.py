@@ -239,8 +239,6 @@ class SubtitlePreviewTests(unittest.TestCase):
         cls.thread.join()
 
     def test_preview_never_calls_paid_provider(self):
-        import server
-
         client = HTTPConnection(*self.httpd.server_address, timeout=10)
         try:
             payload = json.dumps({"subtitles": {"mode": "cycle"}, "page": 1}).encode()
