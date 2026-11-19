@@ -19,6 +19,7 @@ def make_cover(
     fmt: str,
     out: Path,
     ref_url: str | None = None,
+    channel_name: str = "",
 ) -> Path:
     f = FORMATS[fmt]
     w, h = f["cover"]
@@ -42,5 +43,11 @@ def make_cover(
     if cap is not None:
         y = int(h * (0.78 if h > w else 0.72)) - cap.height // 2
         img.paste(cap, ((w - cap.width) // 2, max(0, min(y, h - cap.height))), cap)
+    if channel_name:
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(img)
+        font = graphics.font(max(20, min(w, h) // 28))
+        draw.text((w // 2, int(h * .08)), channel_name, font=font, anchor="mm",
+                  fill="white", stroke_width=3, stroke_fill="black")
     atomic_bytes(out, jpeg_bytes(img))
     return out

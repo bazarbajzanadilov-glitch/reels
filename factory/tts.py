@@ -55,7 +55,8 @@ def _one(text: str, provider: str, voice: str) -> Path:
 
 
 def synthesize_all(
-    texts: list[str], provider: str = "gemini", voice: str | None = None, log=print
+    texts: list[str], provider: str = "gemini", voice: str | None = None, log=print,
+    speed: float = 1.0,
 ) -> list[tuple[str, float]]:
     """Озвучивает все фразы (параллельно). Возвращает [(wav, длительность)]."""
     voice = voice or VOICES[provider]["default"]
@@ -73,6 +74,14 @@ def synthesize_all(
         paths = list(ex.map(one, texts))
     out = []
     for p in paths:
+        if abs(speed - 1.0) > 0.001:
+            adjusted = CACHE / "tts" / f"{p.stem}-speed-{speed:.2f}.wav"
+            with path_lock(adjusted):
+                if not valid_audio(adjusted):
+                    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-i", str(p),
+                                    "-filter:a", f"atempo={speed:.3f}", str(adjusted)],
+                                   check=True, timeout=180)
+            p = adjusted
         with wave.open(str(p)) as w:
             out.append((str(p), w.getnframes() / w.getframerate()))
     return out

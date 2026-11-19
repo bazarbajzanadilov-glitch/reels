@@ -15,6 +15,11 @@ const STYLE_NOTES = {"2d": "плоская векторная графика", "
   clay: "пластилиновые герои", pixel: "ретро-игры", noir: "чёрно-белое кино",
   paper: "аппликация из бумаги", custom: "опишите сами"};
 
+const copyText = async text => {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch { const t=document.createElement("textarea"); t.value=text; t.style.cssText="position:fixed;opacity:0"; document.body.append(t); t.select(); const ok=document.execCommand("copy"); t.remove(); return ok; }
+};
+
 // журнал: короткие строки о том, что происходит
 function journal(text) {
   const list = $("#log"); if (!list) return;
@@ -236,7 +241,8 @@ async function create() {
   $("#go").disabled = true;
   const body=JSON.stringify({topic, review:$("#review-script").checked, subtitles:subtitleSettings(), format:val("format"), minutes:+mins(), animate:val("animate"), reference:refData, scene_reference:sceneRefData, custom_style:$("#custom-style").value, custom_genre:$("#custom-genre").value,
       exact: !!refData && val("exact") === "1", lang:val("lang"), style:val("style"), genre:val("genre"), tone:val("tone"), narrator:val("narrator"), ending:val("ending"),
-      audience:val("audience"), notes:$("#notes").value, video_model:val("vmodel"), max_price:+$("#maxprice").value || null, clips:clipsTouched && val("animate") !== "none" ? +$("#clips").value : null, voice_provider:val("provider"), voice:$("#voice").value});
+      audience:val("audience"), notes:$("#notes").value, video_model:val("vmodel"), max_price:+$("#maxprice").value || null, clips:clipsTouched && val("animate") !== "none" ? +$("#clips").value : null, voice_provider:val("provider"), voice:$("#voice").value,
+      voice_speed:+$("#voice-speed").value, channel_name:$("#channel-name").value});
   let r;
   try {
     const id=await creationKey(body);
@@ -283,6 +289,7 @@ async function load() {
   }
   jobs = r;
   renderHistory();
+  updateDock();
 }
 let historyVisible=48;
 const STATUS_LABELS = {done:"Готово", draft:"Сценарий", queued:"В очереди", running:"Создаётся", cancelling:"Останавливается", cancelled:"Остановлено", error:"Ошибка"};
@@ -300,13 +307,13 @@ function renderHistory() {
     const L = OPT?.langs?.[j.lang || "ru"] || "RU";
     const sub = j.deleted_at ? "Восстановить из корзины" : done ? `${L} · ${j.format === "vertical" ? "9:16" : "16:9"} · ${j.minutes} мин`
               : j.status === "draft" ? "Сценарий готов — проверить" : j.status === "error" ? "Ошибка — посмотреть подробности" : j.status === "queued" ? "В очереди" : j.status === "cancelled" ? "Остановлено — можно продолжить" : esc(j.progress);
-    return `<button type="button" class="item ${esc(j.status)} ${j.format === "horizontal" ? "h" : ""}" data-job="${esc(j.id)}">
+    return `<article class="item ${esc(j.status)} ${j.format === "horizontal" ? "h" : ""}" data-job="${esc(j.id)}" tabindex="0">
       <span class="thumb">${done ? `<img src="${f}cover.jpg" alt="" loading="lazy" decoding="async">` : ""}
         ${["running","queued","cancelling"].includes(j.status) ? '<span class="spin"></span>' : ""}
         <span class="badge">${j.deleted_at ? "Корзина" : STATUS_LABELS[j.status] || ""}</span>
-        <span class="price">${price}</span></span>
+        <span class="price">${price}</span>${done ? `<span class="quick-downloads"><a href="${f}video.mp4?download=1" download title="Скачать видео">MP4</a><a href="${f}cover.jpg?download=1" download title="Скачать обложку">JPG</a><a href="${f}all-texts.txt?download=1" download title="Скачать тексты">TXT</a></span>` : ""}</span>
       <span class="meta"><span class="t">${esc(j.title || j.topic)}</span><span class="s">${sub}</span>
-        ${j.status === "running" ? `<span class="prog"><i style="width:${pct(j.progress)}%"></i></span>` : ""}</span></button>`;
+        ${j.status === "running" ? `<span class="prog"><i style="width:${pct(j.progress)}%"></i></span>` : ""}</span></article>`;
   }).join("");
   if (markup !== lastJobsMarkup) {
     $("#grid").innerHTML = markup;
@@ -314,7 +321,7 @@ function renderHistory() {
   }
 }
 
-$("#grid").onclick = e => { const item = e.target.closest("[data-job]"); if (item) openJob(item.dataset.job); };
+$("#grid").onclick = e => { if (e.target.closest(".quick-downloads")) return; const item = e.target.closest("[data-job]"); if (item) openJob(item.dataset.job); };
 $("#close-dialog").onclick = () => dlg.close();
 
 let cur = null;
@@ -339,8 +346,10 @@ async function openJob(id) {
   cur = j; const f = `/files/${id}/`;
   $("#dialog-status").textContent = "";
   $("#dt").textContent = j.title || j.topic;
-  $("#vid").src = f + "video.mp4"; $("#vid").poster = f + "cover.jpg";
-  $("#dzip").href = f + "result.zip"; $("#dvid").href = f + "video.mp4"; $("#dcov").href = f + "cover.jpg";
+  $("#vid").src = f + "video.mp4"; $("#vid").poster = f + "cover.jpg"; $("#cover-preview").src=f+"cover.jpg";
+  $("#dzip").href = f + "result.zip?download=1"; $("#dvid").href = f + "video.mp4?download=1"; $("#dcov").href = f + "cover.jpg?download=1";
+  $("#dcov-vertical").href=f+"cover-vertical.jpg?download=1"; $("#dcov-youtube").href=f+"cover-youtube.jpg?download=1"; $("#dcov-square").href=f+"cover-square.jpg?download=1";
+  $("#download-text").href=f+"all-texts.txt?download=1";
   $("#dsrt").hidden = !j.files?.includes("subtitles.srt");
   $("#dsrt").href = f + "subtitles.srt";
   $("#dass").hidden=!j.files?.includes("subtitles.ass"); $("#dass").href=f+"subtitles.ass";
@@ -364,6 +373,7 @@ async function tab(name) {
   const requestId = ++selectedTab;
   const jobId = cur.id;
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.f === name));
+  $("#download-network").href=`/files/${cur.id}/${name}.txt?download=1`;
   const fields = social?.[name] || {"Текст": await fetch(`/files/${cur.id}/${name}.txt`).then(r => r.text()).catch(() => "")};
   if (requestId !== selectedTab || cur.id !== jobId) return;
   $("#dialog-status").textContent = "";
@@ -398,6 +408,43 @@ async function tab(name) {
   });
 }
 document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => tab(b.dataset.f));
+$("#copy-all").onclick=async()=>{ const fields=social?.[document.querySelector("#tabs .on")?.dataset.f]||{}; await copyText(Object.values(fields).join("\n\n")); $("#dialog-status").textContent="Описание скопировано"; };
+$("#copy-cover").onclick=async()=>{ try { const image=$("#cover-preview"), canvas=document.createElement("canvas"); canvas.width=image.naturalWidth; canvas.height=image.naturalHeight; canvas.getContext("2d").drawImage(image,0,0); const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png")); await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]); $("#dialog-status").textContent="Картинка скопирована"; } catch { $("#dialog-status").textContent="На этом устройстве картинку нельзя скопировать — скачайте JPG"; } };
+
+$("#voice-speed").oninput=()=>$("#voice-speed-value").textContent=(+$("#voice-speed").value).toFixed(2)+"×";
+
+let activeWorktab="create", dockJob=null, dockScript=null;
+async function updateDock() {
+  const j=jobs.find(x=>!x.deleted_at && x.status==="draft") || jobs.find(x=>!x.deleted_at && ["running","queued"].includes(x.status));
+  const p=j?.status==="draft"?100:j?pct(j.progress):0;
+  $("#live-percent").textContent=Math.round(p)+"%"; $("#live-bar").style.width=p+"%";
+  $("#live-stage").textContent=j?.progress||"Ожидание запуска";
+  if (!j || j.status!=="draft" || dockJob===j.id) return;
+  try {
+    const response=await fetch(`/api/jobs/${j.id}/script`); if(!response.ok) return;
+    dockScript=await response.json(); dockJob=j.id;
+    $("#dock-count").textContent=`${dockScript.scenes.length} сцен`;
+    $("#dock-scenes").innerHTML=dockScript.scenes.map((s,i)=>`<label class="dock-scene"><b>Сцена ${i+1}</b><textarea data-dock-scene="${i}" maxlength="1200">${esc(s.text)}</textarea></label>`).join("")+`<div class="btns"><button type="button" class="btn" id="dock-save">Сохранить</button><button type="button" class="btn main" id="dock-render">Собрать видео</button></div><p id="dock-status" role="status"></p>`;
+    for (const action of ["save","render"]) $(`#dock-${action}`).onclick=async()=>{
+      const scenes=dockScript.scenes.map((s,i)=>({...s,text:document.querySelector(`[data-dock-scene="${i}"]`).value}));
+      try { await postJob(j.id,action==="save"?"script":"render",{title:dockScript.title,scenes}); $("#dock-status").textContent=action==="save"?"Сохранено":"Сборка поставлена в очередь"; if(action==="render") dockJob=null; await load(); }
+      catch(error){ $("#dock-status").textContent=error.message; }
+    };
+  } catch {}
+}
+document.querySelectorAll("[data-worktab]").forEach(button=>button.onclick=()=>{
+  document.querySelectorAll("[data-worktab]").forEach(x=>x.classList.toggle("active",x===button));
+  const target=activeWorktab=button.dataset.worktab;
+  $("#project-history").hidden=target!=="history";
+  $("#create").hidden=target==="history";
+  $(".modes").hidden=target!=="create";
+  $("#video-workspace").hidden=target!=="create";
+  $("#music-workspace").hidden=target!=="music";
+  $("#checkout").hidden=target==="music";
+  $("#checkout").classList.toggle("scenes-only",target==="scenes");
+  $("#scene-dock").classList.toggle("scene-tab",target==="scenes");
+  window.scrollTo({top:0,behavior:"smooth"});
+});
 
 let jobEvents;
 function connectJobEvents() {

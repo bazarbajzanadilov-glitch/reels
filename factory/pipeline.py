@@ -23,6 +23,8 @@ def run(
     lang: str = "ru",
     voice_provider: str = "gemini",
     voice: str | None = None,
+    voice_speed: float = 1.0,
+    channel_name: str = "",
     style: str = "2d",
     genre: str = "auto",
     tone: str = "auto",
@@ -109,7 +111,8 @@ def run(
                 checkpoint_dir=out_dir / ".stages",
             )
             data.update(look)
-            data.update(voice_provider=voice_provider, voice=voice, style_key=style)
+            data.update(voice_provider=voice_provider, voice=voice, voice_speed=voice_speed,
+                        channel_name=channel_name.strip(), style_key=style)
             atomic_json(script, data)
             log(
                 f"сценарий готов: «{data.get('title', topic)}», {len(data['scenes'])} сцен"
@@ -153,6 +156,7 @@ def run(
                 "version": 2,
                 "data": data,
                 "format": fmt,
+                "channel_name": data.get("channel_name", ""),
                 "animate": animate,
                 "clips": clip_limit,
             }
@@ -160,6 +164,7 @@ def run(
         cover_key = fingerprint(
             {
                 "cover": data.get("cover"),
+                "channel_name": data.get("channel_name", ""),
                 "character": data.get("character"),
                 "style": st,
                 "format": fmt,
@@ -178,6 +183,7 @@ def run(
                     fmt,
                     out_dir / "cover.jpg",
                     data.get("reference_url"),
+                    data.get("channel_name", ""),
                 )
 
         with ThreadPoolExecutor(1) as ex:
@@ -209,6 +215,22 @@ def run(
         for name, text in writer.social_texts(data).items():
             (out_dir / name).write_text(text, encoding="utf-8")
 
+        all_texts = []
+        for network, fields in social.items():
+            all_texts.append(network.upper() + "\n" + "\n\n".join(
+                f"{label.upper()}:\n{value}" for label, value in fields.items()
+            ))
+        (out_dir / "all-texts.txt").write_text("\n\n".join(all_texts) + "\n", encoding="utf-8")
+
+        # Useful crops are made locally from the finished cover, without another generation.
+        from PIL import Image, ImageOps
+        source_cover = Image.open(out_dir / "cover.jpg").convert("RGB")
+        for name, size in (("cover-vertical.jpg", (1080, 1920)),
+                           ("cover-youtube.jpg", (1280, 720)),
+                           ("cover-square.jpg", (1080, 1080))):
+            ImageOps.fit(source_cover, size, Image.LANCZOS).save(
+                out_dir / name, "JPEG", quality=92, optimize=True)
+
         log("архив")
         files = [
             "video.mp4",
@@ -217,6 +239,10 @@ def run(
             "instagram.txt",
             "tiktok.txt",
             "facebook.txt",
+            "all-texts.txt",
+            "cover-vertical.jpg",
+            "cover-youtube.jpg",
+            "cover-square.jpg",
         ]
         if data["subtitles"]["mode"] != "off" and (out_dir / "subtitles.srt").is_file():
             files.append("subtitles.srt")
@@ -256,7 +282,12 @@ def remount(directory: Path, fmt: str, animate: str, log=print):
         "instagram.txt",
         "tiktok.txt",
         "facebook.txt",
+        "all-texts.txt",
+        "cover-vertical.jpg",
+        "cover-youtube.jpg",
+        "cover-square.jpg",
     ]
+    files = [name for name in files if (directory / name).is_file()]
     files += [
         name
         for name in ("subtitles.srt", "subtitles.ass")

@@ -123,6 +123,8 @@ def job_options(data):
         ),
         "voice_provider": provider,
         "voice": voice,
+        "voice_speed": number(data.get("voice_speed"), "Темп голоса", 0.75, 1.25, default=1),
+        "channel_name": text(data.get("channel_name", ""), "Название канала", 80),
         **{
             name: choice(data.get(name), options, default, name)
             for name, options, default in [

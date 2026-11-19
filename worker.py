@@ -106,6 +106,8 @@ def process(store, job):
                             ("lang", "ru"),
                             ("voice_provider", "gemini"),
                             ("voice", None),
+                            ("voice_speed", 1.0),
+                            ("channel_name", ""),
                             ("style", "2d"),
                             ("genre", "auto"),
                             ("tone", "auto"),

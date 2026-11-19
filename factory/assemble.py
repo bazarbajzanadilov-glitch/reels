@@ -245,6 +245,7 @@ def assemble(
             data.get("voice_provider", "gemini"),
             data.get("voice"),
             log,
+            speed=data.get("voice_speed", 1.0),
         )
         scenes, voice_parts, sfx_events, total = _timeline(sc, voices)
         subtitle_options = subtitles.normalize(data.get("subtitles"))

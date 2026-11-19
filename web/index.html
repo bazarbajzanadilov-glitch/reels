@@ -23,7 +23,7 @@
 <header class="topbar">
   <div class="topbar-in">
     <a class="logo" href="#create"><span>Reels Studio<small>AI видео-студия</small></span></a>
-    <nav class="topnav" aria-label="Разделы"><a href="#h-idea"><i>1</i>Создание</a><a href="#h-story"><i>2</i>Сюжет</a><a href="#h-visual"><i>3</i>Визуал</a><a href="#h-voice"><i>4</i>Озвучка</a><a href="#h-captions"><i>5</i>Субтитры</a><a href="#project-history"><i>6</i>Мои ролики</a></nav>
+    <nav class="topnav" aria-label="Разделы"><button type="button" class="active" data-worktab="create"><i>1</i>Создание</button><button type="button" data-worktab="scenes"><i>2</i>Сцены</button><button type="button" data-worktab="history"><i>3</i>Мои ролики</button><button type="button" data-worktab="music"><i>4</i>Музыка</button></nav>
     <div class="bal" id="bal" title="Баланс сервиса генерации">—</div>
   </div>
 </header>
@@ -122,6 +122,10 @@
                 <div class="voice-pick-row"><select id="voice" aria-label="Голос диктора"></select><button type="button" class="play" id="voice-play" aria-label="Прослушать голос"><svg><use href="#i-play"/></svg></button></div></div>
             </div>
             <p class="hint">Смена голоса сразу включает пробу.</p>
+            <div class="row voice-extras">
+              <label class="field range-field"><span>Темп голоса <output id="voice-speed-value">1.00×</output></span><input id="voice-speed" type="range" min="0.75" max="1.25" step="0.05" value="1"></label>
+              <label class="field"><span>Название канала для заставки</span><input id="channel-name" maxlength="80" placeholder="Например: NBS SOFT"></label>
+            </div>
           </section>
 
           <section class="pane" aria-labelledby="h-captions">
@@ -194,6 +198,11 @@
           <button type="button" class="go" id="go" disabled>Создать ролик<small id="est"></small></button>
           <p class="note" id="note" aria-live="polite"></p>
         </div>
+        <div class="scene-dock" id="scene-dock">
+          <div class="dock-head"><h2>Сцены</h2><span id="dock-count">После сценария</span></div>
+          <div id="dock-scenes" class="dock-scenes"><p>Здесь появятся сцены с текстом диктора. Их можно будет править прямо в колонке.</p></div>
+          <div class="live-progress"><strong id="live-percent">0%</strong><span id="live-stage">Ожидание запуска</span><div><i id="live-bar"></i></div></div>
+        </div>
       </aside>
     </div>
   </section>
@@ -209,23 +218,25 @@
   </section>
 </main>
 
-<dialog id="dlg" aria-labelledby="dt"><div class="modal">
+<dialog id="dlg" aria-labelledby="dt"><div class="modal result-modal">
   <div class="player"><video id="vid" controls playsinline></video></div>
   <div class="side">
     <h3 id="dt"></h3>
     <div class="costrow"><span id="dcost"></span><span id="dinfo"></span></div>
-    <a class="btn main wide" id="dzip"><svg class="ic"><use href="#i-download"/></svg>Скачать всё</a>
-    <div class="btns">
-      <a class="btn" id="dvid" download>Видео</a>
-      <a class="btn" id="dcov" download>Обложка</a>
+    <div class="result-card"><div><b>Видео</b><small>Готовый MP4</small></div><a class="btn main" id="dvid" download><svg class="ic"><use href="#i-download"/></svg>Скачать MP4</a></div>
+    <div class="result-card cover-card"><img id="cover-preview" alt="Обложка"><div class="cover-actions"><b>Обложка</b><div class="btns"><a class="btn" id="dcov" download>Скачать JPG</a><button type="button" class="btn" id="copy-cover">Скопировать картинку</button></div><div class="cover-sizes"><a id="dcov-vertical" download>9:16</a><a id="dcov-youtube" download>YouTube</a><a id="dcov-square" download>Квадрат</a></div></div></div>
+    <div class="result-card description-card"><div class="description-head"><b>Описание</b><div class="btns"><button type="button" class="btn" id="copy-all">Копировать всё</button><a class="btn" id="download-text">Скачать .txt</a></div></div>
+      <div class="tabs" id="tabs">
+        <button type="button" data-f="youtube" class="on">YouTube</button><button type="button" data-f="instagram">Instagram</button>
+        <button type="button" data-f="tiktok">TikTok</button><button type="button" data-f="facebook">Facebook</button>
+      </div>
+      <div class="fields" id="fields"></div><a class="btn" id="download-network" download>Скачать текст этой сети</a>
+    </div>
+    <a class="btn wide" id="dzip"><svg class="ic"><use href="#i-download"/></svg>Скачать архив</a>
+    <div class="btns secondary-files">
       <a class="btn" id="dsrt" download hidden>SRT</a>
       <a class="btn" id="dass" download hidden>ASS</a>
     </div>
-    <div class="tabs" id="tabs">
-      <button type="button" data-f="youtube" class="on">YouTube</button><button type="button" data-f="instagram">Instagram</button>
-      <button type="button" data-f="tiktok">TikTok</button><button type="button" data-f="facebook">Facebook</button>
-    </div>
-    <div class="fields" id="fields"></div>
     <p class="dialog-status" id="dialog-status" role="status"></p>
     <div class="btns quiet"><button type="button" class="btn ghost" id="edit-script">Сценарий</button><button type="button" class="btn ghost" id="edit-subtitles">Субтитры</button><button type="button" class="btn ghost danger" id="trash-job">Удалить</button></div>
   </div>

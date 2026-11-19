@@ -327,7 +327,7 @@ class SubtitlePipelineTests(unittest.TestCase):
                 return out
 
             def cover(*args):
-                (directory / "cover.jpg").write_bytes(b"test-cover")
+                Image.new("RGB", (120, 200), "blue").save(directory / "cover.jpg")
 
             with (
                 patch(

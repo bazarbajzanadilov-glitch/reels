@@ -23,7 +23,7 @@ import uuid
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, quote
 
 
 from factory import cost, subtitles, editing, alignment
@@ -68,6 +68,10 @@ FILES = {
     "instagram.txt": "text/plain; charset=utf-8",
     "tiktok.txt": "text/plain; charset=utf-8",
     "facebook.txt": "text/plain; charset=utf-8",
+    "all-texts.txt": "text/plain; charset=utf-8",
+    "cover-vertical.jpg": "image/jpeg",
+    "cover-youtube.jpg": "image/jpeg",
+    "cover-square.jpg": "image/jpeg",
 }
 MAX_QUEUE = 20
 RATE = RateLimiter()
@@ -380,11 +384,33 @@ class Handler(BaseHTTPRequestHandler):
             and parts[2] in FILES
             and re.fullmatch(r"[\w-]+", parts[1])
         ):
-            self._file(JOBS / parts[1] / parts[2], FILES[parts[2]])
+            job = load(parts[1])
+            directory = JOBS / parts[1]
+            target = directory / parts[2]
+            if not target.exists() and parts[2] in ("cover-vertical.jpg", "cover-youtube.jpg", "cover-square.jpg"):
+                from PIL import Image, ImageOps
+                sizes = {"cover-vertical.jpg": (1080, 1920), "cover-youtube.jpg": (1280, 720), "cover-square.jpg": (1080, 1080)}
+                if (directory / "cover.jpg").is_file():
+                    with Image.open(directory / "cover.jpg") as source:
+                        atomic_bytes(target, jpeg_bytes(ImageOps.fit(source.convert("RGB"), sizes[parts[2]], Image.Resampling.LANCZOS)))
+            if not target.exists() and parts[2] == "all-texts.txt":
+                texts = []
+                for network in ("youtube", "instagram", "tiktok", "facebook"):
+                    path = directory / f"{network}.txt"
+                    if path.is_file():
+                        texts.append(network.upper() + "\n" + path.read_text(encoding="utf-8"))
+                if texts:
+                    atomic_bytes(target, "\n\n".join(texts).encode("utf-8"))
+            title = re.sub(r"[^\w\- ]+", "", str(job.get("title") or job.get("topic") or "Ролик"), flags=re.UNICODE).strip() or "Ролик"
+            labels = {"video.mp4": "видео.mp4", "cover.jpg": "обложка.jpg",
+                      "cover-vertical.jpg": "обложка 9x16.jpg", "cover-youtube.jpg": "обложка YouTube.jpg",
+                      "cover-square.jpg": "обложка квадрат.jpg", "all-texts.txt": "все описания.txt"}
+            download_name = f"{title} — {labels.get(parts[2], parts[2])}" if parse_qs(u.query).get("download") else None
+            self._file(target, FILES[parts[2]], download_name=download_name)
         else:
             self.send_error(404)
 
-    def _file(self, path: Path, ctype: str, cache: str = "private, no-cache"):
+    def _file(self, path: Path, ctype: str, cache: str = "private, no-cache", download_name: str | None = None):
         """Отдаёт файл. ETag позволяет браузеру не скачивать повторно то, что не изменилось (304)."""
         if not path.is_file():
             return self.send_error(404)
@@ -436,7 +462,10 @@ class Handler(BaseHTTPRequestHandler):
         self._cache_control = cache
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Content-Length", str(end - start + 1))
-        if path.name in FILES and not ctype.startswith(("video", "image", "audio")):
+        if download_name:
+            fallback = re.sub(r"[^A-Za-z0-9._-]+", "_", download_name) or "download"
+            self.send_header("Content-Disposition", f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{quote(download_name)}")
+        elif path.name in FILES and not ctype.startswith(("video", "image", "audio")):
             self.send_header(
                 "Content-Disposition", f'attachment; filename="{path.name}"'
             )
