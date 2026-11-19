@@ -402,4 +402,18 @@ dialog::backdrop { background: rgba(5, 7, 18, .8); backdrop-filter: blur(4px); }
   .mode { flex:0 0 min(72vw, 16rem); scroll-snap-align:start; flex-direction:row; align-items:center; gap:.75rem; min-height:5.25rem; padding:.75rem; }
   .mode small { display:block; line-height:1.25; font-size:.72rem; }
   .mode-art { width:3rem; height:2.2rem; }
+  .ideas, .seg, .presets, .subtitle-presets, .tabs, .cover-sizes, .btns.quiet {
+    display:flex; flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:var(--accent) transparent;
+    padding-bottom:.4rem; max-width:100%;
+  }
+  .ideas > *, .seg > label, .seg > button, .presets > *, .subtitle-presets > *, .tabs > button, .cover-sizes > *, .btns.quiet > * {
+    flex:0 0 auto; white-space:nowrap;
+  }
+  .tabs > button { min-width:5.5rem; padding:.45rem .7rem; }
+  .description-head { align-items:flex-start; flex-direction:column; }
+  .cover-card { grid-template-columns:minmax(5rem, 35%) minmax(0, 1fr); }
+  .cover-actions .btns { flex-direction:column; }
+  .cover-actions .btns > .btn { flex:auto; white-space:normal; }
+  .side, .result-card, .cover-actions { min-width:0; }
 }
