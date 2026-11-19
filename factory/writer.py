@@ -119,12 +119,6 @@ TOPICS = """Ты продюсер вирусных роликов для TikTok,
 Язык тем: {lang}. Каждая тема — до 90 символов, без нумерации и кавычек.
 Ответь ТОЛЬКО JSON: {{"topics": ["тема"]}}"""
 
-DRAFT = """Ты сценарист вирусных роликов. Напиши текст озвучки ролика на тему «{topic}».
-Длина: {minutes} мин — ровно {n} коротких абзацев, по одному на сцену, в каждом 1–2 предложения (80–110 символов).
-Язык: {lang}. Первая фраза — сильный крючок, история развивается без повторов, в конце — вопрос зрителю.
-Пиши только то, что произносит диктор: без ремарок, номеров сцен и описаний кадров.
-Ответь ТОЛЬКО JSON: {{"title": "короткое название", "paragraphs": ["абзац"]}}"""
-
 
 def _ask(prompt: str, timeout: int = 400) -> dict:
     payload = {
@@ -267,7 +261,7 @@ def write(
 
 
 def topics(query: str, lang: str = "ru", count: int = 8) -> list[str]:
-    """Темы для ИИ-помощника; тот же запрос с count=100 наполняет библиотеку тем (manage.py topics)."""
+    """Темы для библиотеки ИИ-помощника; вызывается только разово из manage.py topics."""
 
     def once():
         d = _ask(TOPICS.format(query=query, count=count, lang=LANGS[lang]["name"]), timeout=300)
@@ -281,20 +275,6 @@ def topics(query: str, lang: str = "ru", count: int = 8) -> list[str]:
         return found[:count]
 
     return _retry(once, "темы")
-
-
-def draft(topic: str, minutes: float, lang: str = "ru") -> dict:
-    """Черновик озвучки по выбранной теме; клиент правит его до запуска сборки."""
-    n = max(6, round(minutes * 60 / SECONDS_PER_SCENE))
-
-    def once():
-        d = _ask(DRAFT.format(topic=topic, minutes=minutes, n=n, lang=LANGS[lang]["name"]), timeout=180)
-        paragraphs = [" ".join(str(p).split()) for p in d.get("paragraphs", []) if str(p).strip()]
-        if len(paragraphs) < n * 0.7:
-            raise ValueError(f"мало абзацев: {len(paragraphs)} из {n}")
-        return {"title": str(d.get("title") or topic).strip()[:200], "script": "\n\n".join(paragraphs)}
-
-    return _retry(once, "сценарий")
 
 
 def social(data: dict) -> dict:

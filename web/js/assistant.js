@@ -1,60 +1,50 @@
 "use strict";
 
 /*
- * ИИ-помощник на шаге «Создание»: ниша → тема → черновик сценария → форма ролика.
- * Темы берутся из готовой библиотеки (/data/topics.json) и листаются по кругу бесплатно.
- * Платный запрос — только «Придумать ИИ» для своей ниши и написание сценария;
- * сервер кэширует ответы и ограничивает число запросов в сутки.
+ * Подбор темы на шаге «Создание». Только готовая библиотека (/data/topics.json, 20 ниш × 100 тем):
+ * листание, поиск и выбор ничего не генерируют. Платная генерация начинается лишь с «Создать ролик».
  */
-const AI_PAGE = 6, AI_REWRITES = 3;
-let aiLibrary = {}, aiNiche = "", aiTopic = "", aiBusy = false, aiRewrites = 0;
+const AI_PAGE = 6;
+let aiLibrary = {}, aiNiche = "";
 
 const aiStore = {
   get(name, fallback) { try { return JSON.parse(localStorage.getItem("factory.ai." + name)) ?? fallback; } catch { return fallback; } },
   set(name, value) { try { localStorage.setItem("factory.ai." + name, JSON.stringify(value)); } catch { /* только удобство */ } },
 };
 
-function aiStatus(text, error = false) {
-  $("#ai-status").textContent = text;
-  $("#ai-status").classList.toggle("error", error);
-}
-function aiQuotaText() {
-  return OPT ?`Темы из библиотеки бесплатны · ИИ-запросов на сегодня: ${OPT.assistant_left}` : "";
-}
-
-async function aiPost(path, body) {
-  const response = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
-  const data = await response.json().catch(() => ({}));
-  if (data.left != null && OPT) OPT.assistant_left = data.left;
-  if (!response.ok || data.error) throw new Error(data.error || (response.status === 429 ? "Слишком много запросов. Подождите минуту" : "ИИ-помощник недоступен"));
-  return data;
-}
-
-function setAiBusy(value) {
-  aiBusy = value;
-  for (const node of document.querySelectorAll("#ai-send, #ai-query, #ai-more, #ai-rewrite, #ai-use, .ai-topic")) node.disabled = value;
-}
-
 function renderNiches() {
   $("#ai-niches").innerHTML = Object.keys(aiLibrary).map(name =>
-    `<button type="button" data-niche="${esc(name)}" aria-pressed="${name === aiNiche}">${esc(name)}<span class="hint">${aiLibrary[name].length}</span></button>`).join("");
+    `<button type="button" data-niche="${esc(name)}" aria-pressed="${name === aiNiche}">${esc(name)}</button>`).join("");
+}
+
+function topicButtons(list) {
+  const chosen = $("#topic").value.trim();
+  return list.map((topic, i) => `<button type="button" class="ai-topic" style="--i:${i}" data-topic="${esc(topic)}" aria-pressed="${topic === chosen}">${esc(topic)}</button>`).join("");
 }
 
 function renderTopics() {
+  const query = $("#ai-query").value.trim().toLocaleLowerCase();
+  if (query) {
+    const found = Object.values(aiLibrary).flat().filter(t => t.toLocaleLowerCase().includes(query)).slice(0, 12);
+    $("#ai-niche-title").textContent = found.length ? `Найдено: ${found.length}${found.length === 12 ? "+" : ""}` : "Ничего не нашлось — попробуйте другое слово";
+    $("#ai-topics").innerHTML = topicButtons(found);
+    $("#ai-more").hidden = true;
+    return;
+  }
   const list = aiLibrary[aiNiche] || [], offsets = aiStore.get("offsets", {});
   const start = (offsets[aiNiche] || 0) % Math.max(1, list.length);
   const page = Array.from({length: Math.min(AI_PAGE, list.length)}, (_, i) => list[(start + i) % list.length]);
-  $("#ai-niche-title").textContent = aiNiche ? `${aiNiche} · ${list.length} тем` : "Темы";
-  $("#ai-topics").innerHTML = page.length ? page.map((topic, i) =>
-    `<button type="button" class="ai-topic" style="--i:${i}" data-topic="${esc(topic)}" aria-pressed="${topic === aiTopic}">${esc(topic)}</button>`).join("")
-    : '<p class="hint">Библиотека тем не найдена. Опишите свою нишу ниже.</p>';
+  $("#ai-niche-title").textContent = aiNiche ? `${aiNiche} · ${list.length} тем` : "Библиотека тем не загрузилась";
+  $("#ai-topics").innerHTML = topicButtons(page);
   $("#ai-more").hidden = list.length <= AI_PAGE;
 }
 
 function chooseNiche(name) {
   aiNiche = name;
   aiStore.set("niche", name);
+  $("#ai-query").value = "";
   renderNiches(); renderTopics();
+  $("#ai-niches").querySelector('[aria-pressed="true"]')?.scrollIntoView({block: "nearest", inline: "nearest", behavior: "smooth"});
 }
 
 $("#ai-niches").onclick = e => { const button = e.target.closest("[data-niche]"); if (button) chooseNiche(button.dataset.niche); };
@@ -64,52 +54,15 @@ $("#ai-more").onclick = () => {
   aiStore.set("offsets", offsets);
   renderTopics();
 };
-
-// Своя ниша: запрос к ИИ (повтор того же запроса сервер отдаёт из кэша бесплатно).
-$("#ai-form").onsubmit = async e => {
-  e.preventDefault();
-  const query = $("#ai-query").value.trim();
-  if (aiBusy || !query) return $("#ai-query").focus();
-  setAiBusy(true); aiStatus("Придумываю темы…");
-  try {
-    const result = await aiPost("/api/assistant/topics", {query, lang: val("lang")});
-    aiLibrary = {[query]: result.topics, ...aiLibrary};
-    $("#ai-query").value = "";
-    chooseNiche(query);
-    aiStatus((result.cached ? "Взято из сохранённых ответов, бесплатно. " : "") + aiQuotaText());
-  } catch (error) { aiStatus(error.message, true); }
-  finally { setAiBusy(false); }
-};
-
-async function aiDraft(topic, fresh = false) {
-  if (aiBusy) return;
-  aiTopic = topic; aiRewrites = fresh ? aiRewrites + 1 : 0;
+$("#ai-query").oninput = renderTopics;
+$("#ai-topics").onclick = e => {
+  const topic = e.target.closest("[data-topic]")?.dataset.topic;
+  if (!topic) return;
+  $("#topic").value = topic.slice(0, 200);
+  setIdeaTab("idea");
   renderTopics();
-  setAiBusy(true); aiStatus(fresh ? "Переписываю сценарий…" : `Пишу сценарий на ${mins()} мин…`);
-  try {
-    const draft = await aiPost("/api/assistant/script", {topic, lang: val("lang"), minutes: mins(), fresh});
-    showDraft(topic, draft.script);
-    aiStore.set("draft", {topic, script: draft.script});
-    aiStatus((draft.cached ? "Сценарий взят из сохранённых, бесплатно. " : "") + aiQuotaText());
-    $("#ai-draft").scrollIntoView({block: "nearest", behavior: "smooth"});
-  } catch (error) { aiStatus(error.message, true); }
-  finally { setAiBusy(false); updateRewrites(); }
-}
-function showDraft(topic, script) {
-  aiTopic = topic;
-  $("#ai-draft-topic").textContent = topic;
-  $("#ai-script").value = script;
-  $("#ai-draft").hidden = false;
-  updateRewrites();
-}
-function updateRewrites() {
-  const left = AI_REWRITES - aiRewrites;
-  $("#ai-rewrite").disabled = aiBusy || left <= 0;
-  $("#ai-rewrites").textContent = left > 0 ? `ещё ${left}` : "лимит переписываний";
-}
-$("#ai-topics").onclick = e => { const topic = e.target.closest("[data-topic]"); if (topic) aiDraft(topic.dataset.topic); };
-$("#ai-rewrite").onclick = () => aiDraft(aiTopic, true);
-$("#ai-script").oninput = () => aiStore.set("draft", {topic: aiTopic, script: $("#ai-script").value});
+  $("#ai-status").textContent = `✓ «${topic}» — идея ролика. Настройте параметры ниже и нажмите «Создать ролик».`;
+};
 
 function setIdeaTab(name) {
   const script = name === "script";
@@ -121,35 +74,24 @@ function setIdeaTab(name) {
 $("#tab-idea").onclick = () => setIdeaTab("idea");
 $("#tab-script").onclick = () => { setIdeaTab("script"); $("#script").focus(); };
 
-function setAssistantOpen(open, note) {
+function setAssistantOpen(open) {
   $("#ai-body").hidden = !open;
   $("#ai-toggle").textContent = open ? "Пропустить" : "Открыть";
   $("#ai-toggle").setAttribute("aria-expanded", String(open));
-  $("#ai-sub").textContent = note || "Выберите нишу и тему — сценарий напишу сам";
+  $("#ai-sub").textContent = open ? "2 000 готовых тем по 20 нишам — бесплатно" : "Свёрнуто — откройте, чтобы подобрать тему";
   $("#assistant").classList.toggle("collapsed", !open);
   aiStore.set("open", open);
 }
-$("#ai-use").onclick = () => {
-  const script = $("#ai-script").value.trim();
-  if (!script) return $("#ai-script").focus();
-  $("#topic").value = aiTopic.slice(0, 200);
-  $("#script").value = script;
-  setIdeaTab("script");
-  setAssistantOpen(false, `✓ Сценарий «${aiTopic}» перенесён в форму ниже`);
-  $("#h-idea").scrollIntoView({block: "start", behavior: "smooth"});
-};
 $("#ai-toggle").onclick = () => {
   const open = $("#ai-body").hidden;
-  setAssistantOpen(open, open ? "" : "Свёрнут — впишите идею или свой сценарий ниже");
+  setAssistantOpen(open);
   if (!open) $("#topic").focus();
 };
 
 async function setupAssistant() {
-  aiLibrary = await fetch("/data/topics.json").then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  aiLibrary = await fetch("/data/topics.json", {cache: "no-cache"}).then(r => r.ok ? r.json() : {}).catch(() => ({}));
   const saved = aiStore.get("niche", "");
   chooseNiche(aiLibrary[saved] ? saved : Object.keys(aiLibrary)[0] || "");
-  const draft = aiStore.get("draft", null);
-  if (draft?.script) showDraft(draft.topic, draft.script);
-  if (aiStore.get("open", true) === false) setAssistantOpen(false, "Свёрнут — откройте, чтобы подобрать тему");
+  if (aiStore.get("open", true) === false) setAssistantOpen(false);
 }
 setupAssistant();

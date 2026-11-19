@@ -238,7 +238,7 @@ $("#refrm").onclick = e => { e.preventDefault(); e.stopPropagation(); refData = 
   showReference("#ref", "#refrm", null, "Персонаж");
   $("#exactrow").hidden = true; $("#e0").checked = true; estimate(); };
 $("#scene-file").onchange = e => readImage(e.target, data => { sceneRefData = data; showReference("#scene-ref", "#scene-rm", data, "Место добавлено"); });
-$("#scene-rm").onclick = () => { sceneRefData = null; $("#scene-file").value = ""; showReference("#scene-ref", "#scene-rm", null, "Место действия"); };
+$("#scene-rm").onclick = () => { sceneRefData = null; $("#scene-file").value = ""; showReference("#scene-ref", "#scene-rm", null, "Место"); };
 
 /*
  * Idempotency-Key: одинаковый payload переиспользует pending id.
@@ -461,7 +461,22 @@ function setupChoiceButtons() {
     }
     select.hidden=true; select.insertAdjacentElement("afterend",group);
     select.addEventListener("change",()=>syncChoiceButtons(select)); syncChoiceButtons(select);
+    if (id==="styles") setupCarousel(group, select);
   });
+}
+
+// Карусель стилей: стрелки листают на две карточки, выбранная карточка всегда в поле зрения.
+function setupCarousel(group, select) {
+  const wrap=document.createElement("div"); wrap.className="carousel";
+  group.replaceWith(wrap); wrap.append(group);
+  const nav=(name,label,step)=>{ const b=document.createElement("button"); b.type="button"; b.className="carousel-nav "+name; b.textContent=step<0?"‹":"›"; b.setAttribute("aria-label",label);
+    b.onclick=()=>group.scrollBy({left:step*2*(group.firstElementChild.offsetWidth+12)}); wrap.append(b); return b; };
+  const prev=nav("prev","Предыдущие стили",-1), next=nav("next","Следующие стили",1);
+  const edges=()=>{ prev.disabled=group.scrollLeft<4; next.disabled=group.scrollLeft+group.clientWidth>=group.scrollWidth-4; };
+  const reveal=()=>{ const on=group.querySelector('[aria-pressed="true"]'); if(on) group.scrollTo({left:on.offsetLeft-(group.clientWidth-on.offsetWidth)/2}); };
+  group.addEventListener("scroll",edges,{passive:true}); addEventListener("resize",edges);
+  select.addEventListener("change",reveal);
+  requestAnimationFrame(()=>{ reveal(); edges(); });
 }
 
 // На телефоне план ролика — нижняя панель; «Состав» раскрывает подробности.

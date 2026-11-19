@@ -27,6 +27,8 @@
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
   <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-person" viewBox="0 0 64 64"><circle cx="32" cy="20" r="10"/><path d="M14 60c0-12 8-21 18-21s18 9 18 21"/></symbol>
+  <symbol id="i-place" viewBox="0 0 96 64"><path d="M4 58 30 26l14 16 12-12 36 28z"/><circle cx="70" cy="16" r="7"/><path d="M2 60h92"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
   <symbol id="fmt-v" viewBox="0 0 14 20"><rect x="1.5" y="1.5" width="11" height="17" rx="2.5"/></symbol>
@@ -86,27 +88,19 @@
           <section class="pane assistant" id="assistant" aria-labelledby="h-ai">
             <header class="pane-head">
               <span class="step" aria-hidden="true"><svg class="ic"><use href="#i-spark"/></svg></span>
-              <div><h2 id="h-ai">ИИ-помощник сценария</h2><p class="pane-sub" id="ai-sub">Выберите нишу и тему — сценарий напишу сам</p></div>
+              <div><h2 id="h-ai">Подбор темы</h2><p class="pane-sub" id="ai-sub">2 000 готовых тем по 20 нишам — бесплатно</p></div>
               <button type="button" class="btn ghost sm" id="ai-toggle" aria-expanded="true" aria-controls="ai-body">Пропустить</button>
             </header>
             <div class="ai-body" id="ai-body">
               <div class="ai-niches" id="ai-niches" role="group" aria-label="Ниши"></div>
               <div class="ai-main">
                 <div class="ai-main-head">
-                  <h3 id="ai-niche-title">Темы</h3>
-                  <button type="button" class="btn sm" id="ai-more"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Показать другие</button>
+                  <label class="search ai-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="ai-query" type="search" maxlength="100" placeholder="Найти тему, например: кофе" aria-label="Найти тему"></label>
+                  <button type="button" class="btn" id="ai-more"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Другие темы</button>
                 </div>
+                <h3 class="ai-title" id="ai-niche-title">Темы</h3>
                 <div class="ai-topics" id="ai-topics" aria-live="polite"></div>
-                <form class="ai-own" id="ai-form">
-                  <input id="ai-query" maxlength="300" placeholder="Своя ниша, например: истории о кофе" aria-label="Своя ниша">
-                  <button type="submit" class="btn" id="ai-send"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Придумать ИИ</button>
-                </form>
-                <p class="ai-status" id="ai-status" role="status"></p>
-              </div>
-              <div class="ai-draft" id="ai-draft" hidden>
-                <label class="field-label" for="ai-script">Сценарий <small id="ai-draft-topic"></small></label>
-                <textarea id="ai-script" maxlength="20000"></textarea>
-                <div class="btns"><button type="button" class="btn sm" id="ai-rewrite"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Переписать</button><span class="ai-status" id="ai-rewrites"></span><span class="grow"></span><button type="button" class="btn main" id="ai-use">Использовать сценарий →</button></div>
+                <p class="ai-status" id="ai-status" role="status">Нажмите на тему — она станет идеей ролика. Сценарий напишется при создании, его можно будет проверить перед сборкой.</p>
               </div>
             </div>
           </section>
@@ -195,20 +189,20 @@
               <input type="radio" name="animate" id="a0" value="none"><input type="radio" name="animate" id="a1" value="key"><input type="radio" name="animate" id="a2" value="all" checked>
             </div>
             <div class="row">
-              <div class="field"><span>Мои герои и места <small>необязательно</small></span>
+              <div class="field"><span>Мои герои и места <small>(необязательно)</small></span>
                 <div class="refs">
                   <div class="reference-item"><input type="file" id="reffile" accept="image/jpeg,image/png,image/webp" aria-label="Добавить фото персонажа">
-                    <label class="drop" for="reffile"><svg aria-hidden="true"><use href="#i-plus"/></svg><b id="ref">Персонаж</b></label>
+                    <label class="drop" for="reffile"><svg class="silhouette" aria-hidden="true"><use href="#i-person"/></svg><b><svg aria-hidden="true"><use href="#i-plus"/></svg><span id="ref">Персонаж</span></b></label>
                     <button class="x-mini" id="refrm" type="button" aria-label="Убрать персонажа" hidden>×</button>
                   </div>
                   <div class="reference-item"><input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp" aria-label="Добавить фото места">
-                    <label class="drop" for="scene-file"><svg aria-hidden="true"><use href="#i-plus"/></svg><b id="scene-ref">Место</b></label>
+                    <label class="drop" for="scene-file"><svg class="silhouette" aria-hidden="true"><use href="#i-place"/></svg><b><svg aria-hidden="true"><use href="#i-plus"/></svg><span id="scene-ref">Место</span></b></label>
                     <button class="x-mini" id="scene-rm" type="button" aria-label="Убрать место" hidden>×</button>
                   </div>
                 </div>
               </div>
-              <div class="field"><span>Лимит расходов <small>пусто — подберём сами</small></span>
-                <div class="money-in"><span aria-hidden="true">$</span><input type="number" aria-label="Лимит расходов в долларах" id="maxprice" min="0.05" step="0.05" placeholder="авто"></div>
+              <div class="field"><span>Лимит расходов <small>(не больше этой суммы)</small></span>
+                <div class="money-in"><span aria-hidden="true">$</span><input type="number" aria-label="Лимит расходов в долларах" id="maxprice" min="0.05" step="0.05" value="3" placeholder="авто"></div>
                 <div class="field" id="exactrow" hidden><span>Сходство с персонажем</span>
                   <div class="seg">
                     <input type="radio" name="exact" id="e0" value="0" checked><label for="e0">Похоже</label>
@@ -233,10 +227,10 @@
               <div class="voice-grid" id="voice-grid" role="group" aria-label="Голос диктора"></div>
             </div>
             <div class="row voice-extras">
-              <div class="slider" data-suffix="×" data-decimals="2">
+              <div class="slider" data-suffix="×" data-decimals="2" data-trim="true">
                 <div class="slider-head"><label for="voice-speed">Темп голоса</label><button type="button" class="slider-value" aria-label="Ввести темп точно"></button></div>
                 <input id="voice-speed" type="range" min="0.75" max="1.25" step="0.05" value="1">
-                <div class="slider-scale"><span>медленнее</span><span>быстрее</span></div>
+                <div class="slider-scale"><span>0.75× медленнее</span><span>1× обычный</span><span>быстрее 1.25×</span></div>
               </div>
               <label class="field"><span>Название канала для заставки</span><input id="channel-name" type="text" maxlength="80" placeholder="Например: Тайны мира"></label>
             </div>

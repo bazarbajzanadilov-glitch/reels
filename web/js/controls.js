@@ -24,7 +24,8 @@ function renderSlider(slider) {
   const value = Number(range.value), min = Number(range.min), max = Number(range.max);
   range.style.setProperty("--fill", ((value - min) / ((max - min) || 1) * 100) + "%");
   const decimals = Number(slider.dataset.decimals || 0);
-  pill.textContent = slider.dataset.of ? `${value} из ${max}` : value.toFixed(decimals) + (slider.dataset.suffix || "");
+  const shown = slider.dataset.trim ? String(Number(value.toFixed(decimals))) : value.toFixed(decimals);
+  pill.textContent = slider.dataset.of ? `${value} из ${max}` : shown + (slider.dataset.suffix || "");
 }
 const refreshSliders = () => document.querySelectorAll(".slider").forEach(renderSlider);
 

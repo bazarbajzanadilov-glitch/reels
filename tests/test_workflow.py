@@ -98,23 +98,12 @@ class WorkflowTests(unittest.TestCase):
             self.assertTrue(store.discard_unpaid("pending"))
             self.assertIsNone(store.get("pending")["deleted_at"])
 
-    def test_assistant_caches_answers_and_enforces_daily_limit(self):
-        from factory.assistant import Assistant, QuotaExceeded
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("factory.assistant.key", return_value="sk_test"),
-            patch("factory.assistant.env", return_value="2"),
-            patch("factory.assistant.writer.topics", return_value=["Тема"]) as topics,
-        ):
-            helper = Assistant(Path(directory))
-            params = {"query": "кофе", "lang": "ru"}
-            self.assertEqual(helper.ask("topics", params), ({"topics": ["Тема"]}, False))
-            self.assertEqual(helper.ask("topics", params), ({"topics": ["Тема"]}, True))
-            self.assertEqual(topics.call_count, 1)
-            self.assertEqual(helper.left(), 1)
-            helper.ask("topics", {"query": "чай", "lang": "ru"})
-            with self.assertRaises(QuotaExceeded):
-                helper.ask("topics", {"query": "сок", "lang": "ru"})
+    def test_page_never_calls_paid_generation_on_its_own(self):
+        """Платные эндпоинты есть только у создания и пересборки ролика; помощник работает по библиотеке."""
+        scripts = "".join(p.read_text(encoding="utf-8") for p in (Path(server.ROOT) / "web" / "js").glob("*.js"))
+        self.assertNotIn("/api/assistant", scripts)
+        source = Path(server.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("generation_key", source)
 
     def test_customer_script_reaches_the_writer_prompt(self):
         from factory import writer

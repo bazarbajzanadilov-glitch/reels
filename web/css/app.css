@@ -14,7 +14,7 @@
 .topnav { display: flex; justify-content: center; gap: var(--s-2); min-width: 0; }
 .topnav button { display: flex; align-items: center; justify-content: center; gap: var(--s-2); height: var(--h-md); padding: 0 var(--pad-md); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--muted); font-size: var(--t-sm); font-weight: 600; white-space: nowrap; transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
 .topnav button:hover { background: var(--surface-2); color: var(--text); }
-.topnav button.active { border-color: var(--accent-line); background: var(--accent-soft); color: var(--text); }
+.topnav button.active { border-color: var(--accent-line); background: var(--accent-tint); color: var(--text); }
 .bal { display: flex; align-items: center; gap: var(--s-2); color: var(--muted); font-size: var(--t-sm); white-space: nowrap; }
 .bal b { padding: var(--s-1) var(--s-3); border-radius: var(--r-sm); background: var(--grad); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .bal.low b { background: var(--danger); color: var(--text); }
@@ -40,7 +40,7 @@
   transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .mode:hover { border-color: var(--accent-line); transform: translateY(-2px); }
-.mode[aria-pressed="true"] { border-color: var(--accent); background: linear-gradient(145deg, #322d21, var(--surface-2)); }
+.mode[aria-pressed="true"] { border-color: var(--accent); background: linear-gradient(145deg, var(--surface-3), var(--surface-2)); }
 .mode-art { width: 64px; height: 44px; opacity: .8; }
 .mode[aria-pressed="true"] .mode-art { opacity: 1; }
 .mode-art .a1 { fill: var(--accent-soft); stroke: var(--accent); }
@@ -80,10 +80,11 @@
 .ai-niches { display: grid; gap: var(--s-1); align-content: start; max-height: 26rem; overflow: auto; overscroll-behavior: contain; padding-right: var(--s-1); }
 .ai-niches button { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: var(--h-sm); padding: 0 var(--s-3); border-radius: var(--r-sm); color: var(--muted); font-size: var(--t-sm); text-align: left; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
 .ai-niches button:hover { background: var(--surface-2); color: var(--text); }
-.ai-niches button[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
+.ai-niches button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
 .ai-main { display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
-.ai-main-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); }
-.ai-main-head h3 { font-size: var(--t-md); }
+.ai-main-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.ai-search { flex: 1 1 14rem; }
+.ai-title { font-size: var(--t-md); }
 .ai-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: var(--s-2); }
 .ai-topic {
   display: flex;
@@ -100,14 +101,9 @@
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 .ai-topic:hover { border-color: var(--accent); transform: translateY(-1px); }
-.ai-topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.ai-own { display: flex; gap: var(--s-2); }
-.ai-own input { flex: 1; }
+.ai-topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-tint); }
 .ai-status { color: var(--muted); font-size: var(--t-xs); }
 .ai-status.error { color: var(--danger); }
-.ai-draft { grid-column: 1 / -1; display: grid; gap: var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--line); animation: reveal var(--dur-slow) var(--ease); }
-.ai-draft textarea { min-height: 14rem; }
-.ai-draft .btns { align-items: center; }
 
 /* ---------- 4. Идея ---------- */
 .topic-box { padding: 2px; border: 1px solid var(--accent); border-radius: var(--r-md); background: var(--bg); transition: box-shadow var(--dur) var(--ease); }
@@ -115,7 +111,7 @@
 #topic { display: block; min-height: 104px; border: 0; background: none; font-size: var(--t-md); box-shadow: none; resize: none; }
 .idea-tabs { display: flex; gap: var(--s-1); margin-bottom: var(--s-2); }
 .idea-tabs button { height: var(--h-sm); padding: 0 var(--pad-sm); border-radius: var(--r-pill); color: var(--muted); font-size: var(--t-sm); font-weight: 600; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
-.idea-tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--text); }
+.idea-tabs button[aria-selected="true"] { background: var(--surface-3); color: var(--text); }
 .ideas { margin-top: var(--s-3); }
 .script-field { display: grid; gap: var(--s-2); }
 .script-field textarea { min-height: 12rem; }
@@ -126,7 +122,12 @@
 .reference-item { position: relative; min-width: 0; }
 .reference-item input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .drop { display: grid; place-items: center; align-content: center; gap: var(--s-1); height: 96px; padding: var(--s-3); border: 1px dashed var(--line-2); border-radius: var(--r-md); background: var(--bg) center / cover no-repeat; color: var(--muted); font-size: var(--t-sm); cursor: pointer; transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease); }
-.drop svg { width: 22px; height: 22px; }
+.drop { position: relative; overflow: hidden; align-content: end; }
+.drop .silhouette { position: absolute; inset: var(--s-2) 0 auto; width: 100%; height: 64px; color: var(--muted); opacity: .22; stroke-width: 1.4; transition: opacity var(--dur) var(--ease); }
+.drop:hover .silhouette { opacity: .4; }
+.drop.has .silhouette { display: none; }
+.drop b { position: relative; display: flex; align-items: center; gap: var(--s-1); margin-top: auto; }
+.drop b svg { width: 16px; height: 16px; }
 .drop b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drop:hover { border-color: var(--accent); color: var(--accent); }
 .drop.has { border-style: solid; border-color: var(--accent); color: var(--text); }
@@ -145,6 +146,10 @@
 .subtitle-preview-wrap { position: sticky; top: 6rem; display: grid; gap: var(--s-3); justify-items: center; }
 .preview-frame { position: relative; width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); aspect-ratio: 9 / 16; }
 .preview-frame.h { aspect-ratio: 16 / 9; }
+/* Пока пример не пришёл, виден сам кадр — без пустого окна. */
+.preview-frame { background: var(--surface-2) url("/img/subtitle-vertical.webp") center / cover; }
+.preview-frame.h { background-image: url("/img/subtitle-horizontal.webp"); }
+.preview-frame img:not([src]) { visibility: hidden; }
 .preview-frame img { display: block; width: 100%; height: 100%; object-fit: cover; transition: opacity var(--dur) var(--ease); }
 .preview-frame.loading img { opacity: .55; }
 .preview-pager { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); width: 100%; }
@@ -243,7 +248,7 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
 .flow { display: flex; gap: var(--s-2); padding: 0; list-style: none; }
 .flow li { display: flex; flex: 1 1 0; align-items: center; gap: var(--s-2); min-width: 0; min-height: var(--h-md); padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--faint); font-size: var(--t-sm); font-weight: 600; transition: all var(--dur) var(--ease); }
 .flow li span { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: var(--r-pill); background: var(--surface-3); font-size: var(--t-xs); font-weight: 800; }
-.flow li.active { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+.flow li.active { border-color: var(--accent); background: var(--accent-tint); color: var(--text); }
 .flow li.active span { background: var(--accent); color: var(--accent-ink); }
 .flow li.done { color: var(--text); }
 .flow li.done span { background: var(--ok); color: #06210f; }
@@ -303,7 +308,7 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
 .cover-sizes { display: flex; flex-wrap: wrap; gap: var(--s-3); color: var(--accent); font-size: var(--t-xs); }
 .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-1); padding: var(--s-1); border-radius: var(--r-md); background: var(--surface-3); }
 .tabs button { height: var(--h-sm); border-radius: var(--r-sm); color: var(--muted); font-size: var(--t-xs); font-weight: 700; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
-.tabs button.on { background: var(--accent-soft); color: var(--text); }
+.tabs button.on { background: var(--surface-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
 .fields { display: grid; gap: var(--s-2); }
 .fields .field { display: block; padding: var(--s-2) var(--s-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); }
 .fh { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
@@ -357,20 +362,36 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
   .row, .row-3 { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
   .pane { gap: var(--s-4); padding: var(--s-4); }
   .ai-body { grid-template-columns: minmax(0, 1fr); }
-  .ai-niches { display: flex; max-height: none; overflow-x: auto; padding: 0 0 var(--s-1); scroll-snap-type: x proximity; }
-  .ai-niches button { flex: none; border: 1px solid var(--line-2); border-radius: var(--r-pill); scroll-snap-align: start; }
+  /* Ленты вбок: полоса прокрутки скрыта, правый край затухает — видно, что дальше есть ещё;
+     внутренний отступ не даёт кнопкам упираться в край ленты. */
+  .ai-niches, .history-controls .choice-group {
+    display: flex;
+    gap: var(--s-2);
+    max-height: none;
+    overflow-x: auto;
+    margin: calc(-1 * var(--s-1));
+    padding: var(--s-1) var(--s-8) var(--s-1) var(--s-1);
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--s-10)), transparent);
+  }
+  .ai-niches::-webkit-scrollbar, .history-controls .choice-group::-webkit-scrollbar { display: none; }
+  .ai-niches button, .history-controls .choice-group button { flex: none; scroll-snap-align: start; }
+  /* Голоса на телефоне — две строки, листаются вбок, а не 16 карточек столбиком. */
+  .voice-grid { grid-template-columns: none; grid-template-rows: repeat(2, auto); grid-auto-flow: column; grid-auto-columns: 9.5rem; overflow-x: auto; margin: calc(-1 * var(--s-1)); padding: var(--s-1) var(--s-8) var(--s-1) var(--s-1); scroll-snap-type: x proximity; scrollbar-width: none; mask-image: linear-gradient(to right, #000 calc(100% - var(--s-10)), transparent); }
+  .voice-grid::-webkit-scrollbar { display: none; }
+  .voice-card { scroll-snap-align: start; }
+  .ai-niches button { min-height: var(--h-sm); border: 1px solid var(--line-2); border-radius: var(--r-pill); }
   .ai-niches button[aria-pressed="true"] { border-color: var(--accent); box-shadow: none; }
-  .ai-niches button span { display: none; }
   .ai-topics { grid-template-columns: minmax(0, 1fr); }
   .ai-topic { min-height: var(--h-lg); }
-  .ai-own { flex-direction: column; }
+  .ai-main-head .btn { flex: 1; }
   .subtitle-editor { grid-template-columns: minmax(0, 1fr); }
   .subtitle-preview-wrap { position: static; order: -1; width: min(11rem, 100%); margin: 0 auto; }
   .subtitle-preview-wrap:has(.h) { width: 100%; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
   .history-controls { grid-template-columns: minmax(0, 1fr); }
-  .history-controls .choice-group { display: flex; overflow-x: auto; }
-  .history-controls .choice-group button { flex: none; }
   .kit { padding: var(--s-4); }
   .flow li { flex-direction: column; justify-content: center; gap: var(--s-1); padding: var(--s-2) var(--s-1); font-size: var(--t-xs); text-align: center; }
   .kit-cover { grid-template-columns: 6rem minmax(0, 1fr); }
@@ -382,8 +403,6 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
 @media (max-width: 25rem) {
   .wrap { padding-right: var(--s-3); padding-left: var(--s-3); }
   .pane { padding: var(--s-3); }
-  .refs { grid-template-columns: minmax(0, 1fr); }
-  .choice-group { --seg-min: 6rem; }
   .topnav button { font-size: var(--t-xs); }
   .summary:not(.open) .go { padding: 0 var(--pad-sm); }
 }

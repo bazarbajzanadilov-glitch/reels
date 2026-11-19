@@ -7,7 +7,6 @@ init()
     $("#project-history").hidden = true;
     connectJobEvents();
     balance();
-    aiStatus(aiQuotaText());
   })
   .catch(() => {
     $("#err").textContent = "Не удалось загрузить настройки. Обновите страницу.";

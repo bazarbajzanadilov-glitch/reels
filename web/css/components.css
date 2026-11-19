@@ -144,9 +144,8 @@ input[type=checkbox]:checked::after { transform: translateY(-1px) rotate(-45deg)
 }
 .chip:hover { border-color: var(--accent-line); background: var(--surface-3); }
 .chip:active { transform: scale(.97); }
-.chip.on, .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.chip.on, .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-tint); }
 .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-
 /* Сегменты: ровная сетка одинаковых кнопок, выбранная подсвечена. */
 .choice-group, .seg {
   display: grid;
@@ -170,7 +169,8 @@ input[type=checkbox]:checked::after { transform: translateY(-1px) rotate(-45deg)
   font-weight: 500;
   line-height: 1.25;
   text-align: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
   cursor: pointer;
   user-select: none;
   transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
@@ -179,8 +179,7 @@ input[type=checkbox]:checked::after { transform: translateY(-1px) rotate(-45deg)
 .choice-group button:active, .seg label:active, .seg > button:active { transform: scale(.98); }
 .choice-group button[aria-pressed="true"], .seg input:checked + label, .seg > button[aria-pressed="true"] {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-tint);
   font-weight: 600;
 }
 .choice-group button:disabled { opacity: .45; cursor: not-allowed; }
@@ -279,7 +278,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focus)
 .voice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: var(--s-2); }
 .voice-card {
   display: grid;
-  grid-template-columns: var(--h-sm) minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   gap: var(--s-3);
   min-height: var(--h-lg);
@@ -291,10 +290,11 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focus)
   transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .voice-card:hover { border-color: var(--accent-line); background: var(--surface-3); }
-.voice-card[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
-.voice-card .voice-play { display: grid; place-items: center; width: var(--h-sm); height: var(--h-sm); border-radius: var(--r-pill); background: var(--surface-3); color: var(--accent); transition: background var(--dur) var(--ease); }
+.voice-card[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-tint); }
+.voice-card .voice-play { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--r-pill); background: var(--surface-3); color: var(--accent); transition: background var(--dur) var(--ease), transform var(--dur-fast) var(--ease); }
+.voice-card:hover .voice-play { transform: scale(1.06); }
 .voice-card[aria-pressed="true"] .voice-play { background: var(--accent); color: var(--accent-ink); }
-.voice-card .voice-play svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+.voice-card .voice-play svg { width: 18px; height: 18px; margin-left: 2px; fill: currentColor; stroke: none; }
 .voice-card b { display: block; overflow: hidden; font-size: var(--t-sm); text-overflow: ellipsis; white-space: nowrap; }
 .voice-card small { color: var(--faint); font-size: var(--t-xs); }
 .eq { display: none; align-items: flex-end; gap: 2px; height: 14px; }
@@ -307,12 +307,21 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focus)
 .voice-card.busy .voice-play { opacity: .6; }
 @keyframes eq { from { height: 3px; } to { height: 14px; } }
 
-.choice-group.style-grid { --seg-min: 7rem; }
-.style-grid button { flex-direction: column; justify-content: flex-start; gap: var(--s-2); padding: var(--s-1) var(--s-1) var(--s-2); }
-.style-grid img, .style-grid .style-custom { width: 100%; aspect-ratio: 4 / 5; border-radius: var(--r-sm); object-fit: cover; background: var(--surface-3); transition: transform var(--dur-slow) var(--ease); }
-.style-grid button:hover img { transform: scale(1.03); }
+/* Стили — карусель карточек: одна строка, листается стрелками или пальцем. */
+.carousel { position: relative; min-width: 0; }
+.choice-group.style-grid { display: flex; gap: var(--s-3); overflow-x: auto; padding: var(--s-1); margin: calc(-1 * var(--s-1)); scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+.style-grid::-webkit-scrollbar { display: none; }
+.style-grid button { flex: 0 0 9.5rem; flex-direction: column; justify-content: flex-start; gap: var(--s-2); padding: var(--s-1) var(--s-1) var(--s-3); scroll-snap-align: center; }
+.style-grid img, .style-grid .style-custom { width: 100%; aspect-ratio: 4 / 5; border-radius: var(--r-sm); object-fit: cover; background: var(--surface-3); transition: transform var(--dur-slow) var(--ease), filter var(--dur) var(--ease); }
+.style-grid button:not([aria-pressed="true"]) img { filter: saturate(.8) brightness(.85); }
+.style-grid button:hover img { transform: scale(1.03); filter: none; }
 .style-grid .style-custom { display: grid; place-items: center; color: var(--accent); }
 .style-grid .style-custom svg { width: 28px; height: 28px; }
+.carousel-nav { position: absolute; top: 40%; z-index: 2; display: grid; place-items: center; width: var(--h-md); height: var(--h-md); border: 1px solid var(--line-2); border-radius: var(--r-pill); background: rgba(20, 25, 54, .92); color: var(--text); font-size: var(--t-xl); box-shadow: var(--shadow); transform: translateY(-50%); transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease); }
+.carousel-nav:hover { background: var(--surface-3); }
+.carousel-nav.prev { left: calc(-1 * var(--s-3)); }
+.carousel-nav.next { right: calc(-1 * var(--s-3)); }
+.carousel-nav:disabled { opacity: 0; pointer-events: none; }
 
 /* ---------- 9. Статусы и скелетоны ---------- */
 .pill { padding: 2px var(--s-2); border-radius: var(--r-pill); background: var(--surface-3); color: var(--muted); font-size: var(--t-xs); font-weight: 700; }

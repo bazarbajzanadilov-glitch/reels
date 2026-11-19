@@ -17,6 +17,7 @@
   --accent-hover: #ffcb45;
   --accent-ink: #1b1400;
   --accent-soft: rgba(245, 180, 20, .12);
+  --accent-tint: rgba(245, 180, 20, .05); /* фон выбранного элемента — едва заметный */
   --accent-line: rgba(245, 180, 20, .45);
   --grad: linear-gradient(180deg, #ffcd45, #f0a400);
   --ok: #46d98e;
@@ -70,4 +71,13 @@
   --dur: 200ms;
   --dur-slow: 320ms;
   --ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* На телефоне весь текст на 1px крупнее: кнопки и подписи читаются без увеличения. */
+@media (max-width: 45rem) {
+  :root {
+    --t-xs: 13px;
+    --t-sm: 14px;
+    --t-md: 16px;
+  }
 }

@@ -27,7 +27,6 @@ from urllib.parse import parse_qs, urlparse, quote
 
 
 from factory import cost, subtitles, editing, alignment
-from factory.assistant import Assistant, QuotaExceeded
 from factory.config import (
     API,
     AUDIENCES,
@@ -51,10 +50,7 @@ from factory.validation import (
     InvalidRequest,
     PayloadTooLarge,
     MAX_BODY,
-    choice,
     job_options,
-    number,
-    text,
     reference_image,
     estimate_options,
 )
@@ -290,9 +286,10 @@ class Handler(BaseHTTPRequestHandler):
         if u.path in ("/", "/index.html"):
             self._file(ROOT / "web" / "index.html", "text/html; charset=utf-8")
         elif asset:
-            # Статика только из этих папок и с этими расширениями; картинки и темы кэшируются на неделю.
+            # Статика только из этих папок и с этими расширениями; картинки кэшируются на неделю,
+            # остальное сверяется по ETag (304), чтобы обновления доходили сразу.
             name, ext = asset.groups()
-            self._file(ROOT / "web" / name, STATIC_TYPES[ext], "public, max-age=604800" if ext in ("webp", "json") else "private, no-cache")
+            self._file(ROOT / "web" / name, STATIC_TYPES[ext], "public, max-age=604800" if ext == "webp" else "private, no-cache")
         elif u.path == "/api/estimate":
             self._json(cost.estimate(**estimate_options(parse_qs(u.query))))
         elif u.path == "/api/events":
@@ -330,7 +327,6 @@ class Handler(BaseHTTPRequestHandler):
             self._json(
                 {
                     "word_timing": alignment.available(),
-                    "assistant_left": Assistant(JOBS / ".assistant").left(),
                     "langs": {k: v["label"] for k, v in LANGS.items()},
                     "voices": {
                         k: {
@@ -551,29 +547,6 @@ class Handler(BaseHTTPRequestHandler):
                     jid, transform, action if action == "render" else None
                 )
             )
-        if self.path in ("/api/assistant/topics", "/api/assistant/script"):
-            if self._limited("assistant", 12):
-                return
-            data = self._read_json(8192)
-            lang = choice(data.get("lang"), LANGS, "ru", "язык")
-            helper = Assistant(JOBS / ".assistant")
-            try:
-                if self.path.endswith("/topics"):
-                    params = {"query": text(data.get("query", ""), "Запрос", 300, True), "lang": lang}
-                    result, cached = helper.ask("topics", params)
-                else:
-                    params = {
-                        "topic": text(data.get("topic", ""), "Тема", 200, True),
-                        "minutes": number(data.get("minutes"), "Длительность", 0.5, 15, default=1),
-                        "lang": lang,
-                    }
-                    result, cached = helper.ask("script", params, fresh=data.get("fresh") is True)
-            except QuotaExceeded as error:
-                return self._json({"error": str(error), "left": 0}, 429)
-            except RuntimeError:
-                LOG.exception("Assistant request failed")
-                return self._json({"error": "ИИ-помощник сейчас недоступен. Повторите через минуту", "left": helper.left()}, 502)
-            return self._json({**result, "cached": cached, "left": helper.left()})
         if self.path == "/api/subtitles/preview":
             if self._limited("preview", 180):
                 return
