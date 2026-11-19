@@ -397,3 +397,9 @@ dialog::backdrop { background: rgba(5, 7, 18, .8); backdrop-filter: blur(4px); }
   .topnav button { flex-direction:column; gap:.15rem; min-height:3.15rem; font-size:.66rem; }
   .topnav button i { width:1rem; height:1rem; }
 }
+@media (max-width:44rem) {
+  .modes { display:flex; overflow-x:auto; gap:.6rem; margin-right:-1rem; padding:0 1rem .6rem 0; scroll-snap-type:x mandatory; scrollbar-width:thin; scrollbar-color:var(--accent) transparent; }
+  .mode { flex:0 0 min(72vw, 16rem); scroll-snap-align:start; flex-direction:row; align-items:center; gap:.75rem; min-height:5.25rem; padding:.75rem; }
+  .mode small { display:block; line-height:1.25; font-size:.72rem; }
+  .mode-art { width:3rem; height:2.2rem; }
+}
