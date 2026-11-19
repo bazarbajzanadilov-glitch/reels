@@ -26,7 +26,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse, quote
 
 
-from factory import cost, subtitles, editing, alignment
+from factory import cost, subtitles, editing, alignment, chat
 from factory.config import (
     API,
     AUDIENCES,
@@ -352,6 +352,7 @@ class Handler(BaseHTTPRequestHandler):
                         k: {"label": v["label"], "note": v["note"], "price": v["price"]}
                         for k, v in VIDEO_MODELS.items()
                     },
+                    "chat_models": {k: v["label"] for k, v in chat.MODELS.items()},
                 }
             )
         elif re.fullmatch(
@@ -547,6 +548,18 @@ class Handler(BaseHTTPRequestHandler):
                     jid, transform, action if action == "render" else None
                 )
             )
+        if self.path == "/api/chat":
+            if self._limited("chat", 30):
+                return
+            data = self._read_json(256 * 1024)
+            try:
+                text = chat.reply(str(data.get("model", "")), data.get("messages"))
+            except chat.ChatError as error:
+                return self._json({"error": str(error)}, 400)
+            except Exception as error:
+                LOG.warning("Chat failed: %s", error)
+                return self._json({"error": "Модель сейчас не отвечает. Попробуйте ещё раз или выберите другую"}, 502)
+            return self._json({"reply": text})
         if self.path == "/api/subtitles/preview":
             if self._limited("preview", 180):
                 return

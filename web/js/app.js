@@ -78,7 +78,7 @@ async function init() {
   const later = (ms = 250) => { clearTimeout(priceTimer); priceTimer = setTimeout(estimate, ms); };
   $("#maxprice").oninput = () => later(300);
   $("#clips").oninput = () => { clipsTouched = true; later(); };
-  for (const name of ["minutes", "clips"]) {
+  for (const name of ["minutes", "clips", "maxprice"]) {
     const number = $("#"+name), range = $("#"+name+"-range");
     range.oninput = () => { number.value=range.value; number.dispatchEvent(new Event("input", {bubbles:true})); };
     number.addEventListener("input", () => { range.value=number.value; });
@@ -169,17 +169,22 @@ function showClips(r) {
   $("#clips-value").textContent = r.scenes;
   refreshSliders();
   $("#clips-reset").hidden = !clipsTouched;
-  const max = +$("#maxprice").value;
-  $("#maxprice").placeholder = "авто · " + r.budget.toFixed(2);
-  if (r.capped && max) {
-    const need = Math.ceil((r.minimum + r.wanted * r.clip_price) * 1.15 * 20) / 20;
-    $("#clips-note").innerHTML = `В лимит $${max.toFixed(2)} помещается ${r.clips} из ${r.wanted}. <button type="button" class="link" id="raise">Поднять лимит до $${need.toFixed(2)}</button>`;
-    $("#raise").onclick = () => { $("#maxprice").value = need.toFixed(2); $("#maxprice").dispatchEvent(new Event("change", {bubbles: true})); estimate(); };
-  } else if (r.capped) {
-    $("#clips-note").textContent = `В стандартный лимит $${r.budget.toFixed(2)} помещается ${r.clips}. Нажмите +, и лимит поднимется.`;
+  if (r.capped) {
+    const need = Math.min(100, Math.ceil((r.minimum + r.wanted * r.clip_price) * 1.15 * 4) / 4);
+    $("#clips-note").innerHTML = `В лимит $${r.budget.toFixed(2)} помещается ${r.clips} из ${r.wanted}. <button type="button" class="link" id="raise">Поднять лимит до $${need.toFixed(2)}</button>`;
+    $("#raise").onclick = () => setLimit(need);
   } else {
-    $("#clips-note").textContent = clipsTouched ? `Лимит подстроен: до $${r.budget.toFixed(2)}.` : "По умолчанию 4 анимированные сцены на минуту.";
+    $("#clips-note").textContent = clipsTouched ? `Все ${r.wanted} сцен помещаются в лимит $${r.budget.toFixed(2)}.` : "По умолчанию 4 анимированные сцены на минуту.";
   }
+}
+// Лимит расходов — ползунок; скрытое #maxprice хранит значение для формы и настроек.
+function setLimit(value) {
+  const input = $("#maxprice");
+  input.value = Math.min(100, Math.max(0.25, Math.round(+value * 4) / 4)).toFixed(2);
+  $("#maxprice-range").value = input.value;
+  input.dispatchEvent(new Event("change", {bubbles: true}));
+  refreshSliders();
+  estimate();
 }
 
 let audio = null, audioButton = null;

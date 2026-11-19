@@ -7,7 +7,7 @@
 
 // ---------- Слайдеры ----------
 // data-suffix / data-decimals — формат пилюли; data-of — «4 из 10»;
-// data-source="number" — значение хранит скрытое числовое поле (#minutes, #clips), иначе сам range.
+// data-prefix — знак перед числом ($); data-source="number" — значение хранит скрытое числовое поле (#minutes, #clips, #maxprice), иначе сам range.
 function sliderParts(slider) {
   const range = slider.querySelector("input[type=range]");
   let number = slider.querySelector(".slider-head input[type=number]");
@@ -25,7 +25,7 @@ function renderSlider(slider) {
   range.style.setProperty("--fill", ((value - min) / ((max - min) || 1) * 100) + "%");
   const decimals = Number(slider.dataset.decimals || 0);
   const shown = slider.dataset.trim ? String(Number(value.toFixed(decimals))) : value.toFixed(decimals);
-  pill.textContent = slider.dataset.of ? `${value} из ${max}` : shown + (slider.dataset.suffix || "");
+  pill.textContent = slider.dataset.of ? `${value} из ${max}` : (slider.dataset.prefix || "") + shown + (slider.dataset.suffix || "");
 }
 const refreshSliders = () => document.querySelectorAll(".slider").forEach(renderSlider);
 

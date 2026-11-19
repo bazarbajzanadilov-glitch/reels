@@ -1,67 +1,115 @@
 "use strict";
 
 /*
- * Подбор темы на шаге «Создание». Только готовая библиотека (/data/topics.json, 20 ниш × 100 тем):
- * листание, поиск и выбор ничего не генерируют. Платная генерация начинается лишь с «Создать ролик».
+ * Чат с ИИ на шаге «Создание»: клиент переписывается с GPT или Claude, модель подкидывает идеи.
+ * Строки-идеи из ответа («- …» или «1. …») становятся кнопками — нажатие кладёт идею в поле темы.
+ * Запрос уходит только по «Отправить»; история хранится в браузере.
  */
-const AI_PAGE = 6;
-let aiLibrary = {}, aiNiche = "";
+const CHAT_MAX = 30;
+let chatHistory = [], chatModel = "gpt", chatBusy = false;
 
 const aiStore = {
   get(name, fallback) { try { return JSON.parse(localStorage.getItem("factory.ai." + name)) ?? fallback; } catch { return fallback; } },
   set(name, value) { try { localStorage.setItem("factory.ai." + name, JSON.stringify(value)); } catch { /* только удобство */ } },
 };
 
-function renderNiches() {
-  $("#ai-niches").innerHTML = Object.keys(aiLibrary).map(name =>
-    `<button type="button" data-niche="${esc(name)}" aria-pressed="${name === aiNiche}">${esc(name)}</button>`).join("");
-}
+const IDEA_LINE = /^\s*(?:[-•*–]|\d{1,2}[.)])\s+(.+)$/;
+const plainIdea = s => s.replace(/\*\*|__|`/g, "").replace(/^[«"“]+|[»"”]+$/g, "").trim();
 
-function topicButtons(list) {
+// Ответ модели → абзацы и список идей-кнопок. Текст экранируется, разметку не исполняем.
+function messageHtml(text) {
   const chosen = $("#topic").value.trim();
-  return list.map((topic, i) => `<button type="button" class="ai-topic" style="--i:${i}" data-topic="${esc(topic)}" aria-pressed="${topic === chosen}">${esc(topic)}</button>`).join("");
-}
-
-function renderTopics() {
-  const query = $("#ai-query").value.trim().toLocaleLowerCase();
-  if (query) {
-    const found = Object.values(aiLibrary).flat().filter(t => t.toLocaleLowerCase().includes(query)).slice(0, 12);
-    $("#ai-niche-title").textContent = found.length ? `Найдено: ${found.length}${found.length === 12 ? "+" : ""}` : "Ничего не нашлось — попробуйте другое слово";
-    $("#ai-topics").innerHTML = topicButtons(found);
-    $("#ai-more").hidden = true;
-    return;
+  const blocks = [];
+  let list = null, para = [];
+  const flush = () => { if (para.length) { blocks.push(`<p>${para.map(l => esc(l.replace(/\*\*/g, ""))).join("<br>")}</p>`); para = []; } };
+  for (const line of String(text).split(/\r?\n/)) {
+    const m = line.match(IDEA_LINE);
+    if (m && plainIdea(m[1])) {
+      flush();
+      if (!list) { list = []; blocks.push(list); }
+      list.push(plainIdea(m[1]));
+    } else {
+      list = null;
+      if (line.trim()) para.push(line.trim()); else flush();
+    }
   }
-  const list = aiLibrary[aiNiche] || [], offsets = aiStore.get("offsets", {});
-  const start = (offsets[aiNiche] || 0) % Math.max(1, list.length);
-  const page = Array.from({length: Math.min(AI_PAGE, list.length)}, (_, i) => list[(start + i) % list.length]);
-  $("#ai-niche-title").textContent = aiNiche ? `${aiNiche} · ${list.length} тем` : "Библиотека тем не загрузилась";
-  $("#ai-topics").innerHTML = topicButtons(page);
-  $("#ai-more").hidden = list.length <= AI_PAGE;
+  flush();
+  return blocks.map(b => Array.isArray(b)
+    ? `<div class="chat-ideas">${b.map(idea => `<button type="button" class="ai-topic" data-topic="${esc(idea)}" aria-pressed="${idea === chosen}"><span>${esc(idea)}</span><small>Взять</small></button>`).join("")}</div>`
+    : b).join("");
 }
 
-function chooseNiche(name) {
-  aiNiche = name;
-  aiStore.set("niche", name);
-  $("#ai-query").value = "";
-  renderNiches(); renderTopics();
-  $("#ai-niches").querySelector('[aria-pressed="true"]')?.scrollIntoView({block: "nearest", inline: "nearest", behavior: "smooth"});
+function renderChat() {
+  const log = $("#chat-log");
+  log.innerHTML = chatHistory.map(m => m.role === "user"
+    ? `<div class="msg user"><p>${esc(m.content)}</p></div>`
+    : `<div class="msg bot"><span class="msg-who">${esc(m.model || "ИИ")}</span>${messageHtml(m.content)}</div>`).join("")
+    + (chatBusy ? `<div class="msg bot typing" aria-label="ИИ печатает"><i></i><i></i><i></i></div>` : "");
+  log.hidden = !chatHistory.length && !chatBusy;
+  $("#chat-starters").hidden = chatHistory.length > 0;
+  log.scrollTop = log.scrollHeight;
 }
 
-$("#ai-niches").onclick = e => { const button = e.target.closest("[data-niche]"); if (button) chooseNiche(button.dataset.niche); };
-$("#ai-more").onclick = () => {
-  const offsets = aiStore.get("offsets", {});
-  offsets[aiNiche] = ((offsets[aiNiche] || 0) + AI_PAGE) % Math.max(1, (aiLibrary[aiNiche] || []).length);
-  aiStore.set("offsets", offsets);
-  renderTopics();
+function renderModels() {
+  const models = OPT?.chat_models || {gpt: "GPT", claude: "Claude"};
+  if (!models[chatModel]) chatModel = Object.keys(models)[0];
+  $("#chat-models").innerHTML = Object.entries(models).map(([k, label]) =>
+    `<button type="button" data-model="${esc(k)}" aria-pressed="${k === chatModel}">${esc(label)}</button>`).join("");
+}
+
+async function sendChat(text) {
+  text = String(text || "").trim();
+  if (!text || chatBusy) return;
+  chatHistory.push({role: "user", content: text.slice(0, 4000)});
+  chatHistory = chatHistory.slice(-CHAT_MAX);
+  $("#chat-input").value = ""; fitChatInput();
+  chatBusy = true; $("#chat-send").disabled = true;
+  $("#ai-status").classList.remove("error");
+  renderChat();
+  const label = OPT?.chat_models?.[chatModel] || chatModel;
+  try {
+    const response = await fetch("/api/chat", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({model: chatModel, messages: chatHistory.map(({role, content}) => ({role, content}))})});
+    const r = await response.json().catch(() => ({}));
+    if (!response.ok || !r.reply) throw new Error(r.error || (response.status === 429 ? "Слишком много сообщений. Подождите минуту" : "Не удалось получить ответ"));
+    chatHistory.push({role: "assistant", content: r.reply, model: label});
+    $("#ai-status").textContent = "Нажмите на идею в ответе — она станет темой ролика.";
+  } catch (error) {
+    chatHistory.pop();
+    $("#chat-input").value = text; fitChatInput();
+    $("#ai-status").textContent = error.message || "Нет связи с сервером";
+    $("#ai-status").classList.add("error");
+  } finally {
+    chatBusy = false; $("#chat-send").disabled = false;
+    aiStore.set("chat", chatHistory);
+    renderChat();
+  }
+}
+
+function fitChatInput() {
+  const input = $("#chat-input");
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 160) + "px";
+}
+
+$("#chat-form").onsubmit = e => { e.preventDefault(); sendChat($("#chat-input").value); };
+$("#chat-input").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(e.target.value); } };
+$("#chat-input").oninput = fitChatInput;
+$("#chat-starters").onclick = e => { const b = e.target.closest("button"); if (b) sendChat(b.textContent); };
+$("#chat-models").onclick = e => {
+  const b = e.target.closest("[data-model]");
+  if (!b) return;
+  chatModel = b.dataset.model; aiStore.set("model", chatModel); renderModels();
 };
-$("#ai-query").oninput = renderTopics;
-$("#ai-topics").onclick = e => {
+$("#chat-clear").onclick = () => { if (chatBusy) return; chatHistory = []; aiStore.set("chat", []); renderChat(); $("#chat-input").focus(); };
+$("#chat-log").onclick = e => {
   const topic = e.target.closest("[data-topic]")?.dataset.topic;
   if (!topic) return;
   $("#topic").value = topic.slice(0, 200);
   setIdeaTab("idea");
-  renderTopics();
-  $("#ai-status").textContent = `✓ «${topic}» — идея ролика. Настройте параметры ниже и нажмите «Создать ролик».`;
+  renderChat();
+  $("#ai-status").classList.remove("error");
+  $("#ai-status").textContent = `✓ «${topic.slice(0, 200)}» — идея ролика. Настройте параметры ниже и нажмите «Создать ролик».`;
 };
 
 function setIdeaTab(name) {
@@ -76,22 +124,26 @@ $("#tab-script").onclick = () => { setIdeaTab("script"); $("#script").focus(); }
 
 function setAssistantOpen(open) {
   $("#ai-body").hidden = !open;
-  $("#ai-toggle").textContent = open ? "Пропустить" : "Открыть";
+  $("#ai-toggle").textContent = open ? "Свернуть" : "Открыть";
   $("#ai-toggle").setAttribute("aria-expanded", String(open));
-  $("#ai-sub").textContent = open ? "2 000 готовых тем по 20 нишам — бесплатно" : "Свёрнуто — откройте, чтобы подобрать тему";
+  $("#ai-sub").textContent = open ? "Обсудите идею — ИИ подкинет темы для ролика" : "Свёрнуто — откройте, чтобы обсудить идею с ИИ";
   $("#assistant").classList.toggle("collapsed", !open);
   aiStore.set("open", open);
 }
 $("#ai-toggle").onclick = () => {
   const open = $("#ai-body").hidden;
   setAssistantOpen(open);
-  if (!open) $("#topic").focus();
+  if (open) $("#chat-input").focus(); else $("#topic").focus();
 };
 
-async function setupAssistant() {
-  aiLibrary = await fetch("/data/topics.json", {cache: "no-cache"}).then(r => r.ok ? r.json() : {}).catch(() => ({}));
-  const saved = aiStore.get("niche", "");
-  chooseNiche(aiLibrary[saved] ? saved : Object.keys(aiLibrary)[0] || "");
+function setupAssistant() {
+  const saved = aiStore.get("chat", []);
+  chatHistory = Array.isArray(saved) ? saved.filter(m => m && ["user", "assistant"].includes(m.role) && typeof m.content === "string").slice(-CHAT_MAX) : [];
+  chatModel = aiStore.get("model", "gpt");
+  renderModels(); renderChat();
   if (aiStore.get("open", true) === false) setAssistantOpen(false);
+  // список моделей приходит с /api/options — перерисуем, когда он загрузится
+  const wait = setInterval(() => { if (OPT) { clearInterval(wait); renderModels(); } }, 200);
+  setTimeout(() => clearInterval(wait), 15000);
 }
 setupAssistant();

@@ -99,11 +99,31 @@ class WorkflowTests(unittest.TestCase):
             self.assertIsNone(store.get("pending")["deleted_at"])
 
     def test_page_never_calls_paid_generation_on_its_own(self):
-        """Платные эндпоинты есть только у создания и пересборки ролика; помощник работает по библиотеке."""
+        """Платные запросы — создание ролика и сообщения в чат; чат отправляет только по «Отправить»."""
         scripts = "".join(p.read_text(encoding="utf-8") for p in (Path(server.ROOT) / "web" / "js").glob("*.js"))
         self.assertNotIn("/api/assistant", scripts)
+        self.assertNotIn("/data/topics.json", scripts)
         source = Path(server.__file__).read_text(encoding="utf-8")
         self.assertNotIn("generation_key", source)
+
+    def test_chat_validates_history_and_picks_model(self):
+        from factory import chat
+        with self.assertRaises(chat.ChatError):
+            chat.reply("gpt", [])
+        with self.assertRaises(chat.ChatError):
+            chat.reply("unknown", [{"role": "user", "content": "привет"}])
+        with self.assertRaises(chat.ChatError):
+            chat.clean_messages([{"role": "system", "content": "x"}])
+        sent = []
+
+        def fake(url, data=None, headers=None, timeout=0, tries=0, api_key=None):
+            sent.append(json.loads(data))
+            return json.dumps({"choices": [{"message": {"content": "- Идея один"}}]}).encode()
+
+        with patch("factory.chat.request", side_effect=fake), patch("factory.chat.key", return_value="k"):
+            self.assertEqual(chat.reply("claude", [{"role": "user", "content": "идеи"}]), "- Идея один")
+        self.assertEqual(sent[0]["model"], chat.MODELS["claude"]["model"])
+        self.assertEqual(sent[0]["messages"][0]["role"], "system")
 
     def test_customer_script_reaches_the_writer_prompt(self):
         from factory import writer

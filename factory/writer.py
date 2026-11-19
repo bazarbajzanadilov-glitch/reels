@@ -113,13 +113,6 @@ PART = (
 )
 
 
-TOPICS = """Ты продюсер вирусных роликов для TikTok, YouTube Shorts и Instagram Reels.
-Запрос автора: «{query}».
-Предложи {count} разных тем для роликов по этому запросу: конкретных, интригующих, с сильным крючком.
-Язык тем: {lang}. Каждая тема — до 90 символов, без нумерации и кавычек.
-Ответь ТОЛЬКО JSON: {{"topics": ["тема"]}}"""
-
-
 def _ask(prompt: str, timeout: int = 400) -> dict:
     payload = {
         "model": TEXT_MODEL,
@@ -258,23 +251,6 @@ def write(
             data["scenes"] = [s for chunk in ex.map(part, ranges) for s in chunk]
     data["lang"] = lang
     return data
-
-
-def topics(query: str, lang: str = "ru", count: int = 8) -> list[str]:
-    """Темы для библиотеки ИИ-помощника; вызывается только разово из manage.py topics."""
-
-    def once():
-        d = _ask(TOPICS.format(query=query, count=count, lang=LANGS[lang]["name"]), timeout=300)
-        found = []
-        for item in d.get("topics", []):
-            value = " ".join(str(item).split()).strip(" «»\"'")[:200]
-            if value and value not in found:
-                found.append(value)
-        if not found:
-            raise ValueError("пустой список тем")
-        return found[:count]
-
-    return _retry(once, "темы")
 
 
 def social(data: dict) -> dict:

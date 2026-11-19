@@ -17,7 +17,6 @@ web/               интерфейс
   css/components.css  кнопки, поля, сегменты, слайдеры, свотчи, карточки выбора
   css/app.css      раскладка страниц и блоков (только токены — проверяет tests/test_design.py)
   js/*.js          клиентские скрипты
-  data/topics.json библиотека тем ИИ-помощника (python manage.py topics)
   img/             превью стилей и подложки превью субтитров (python manage.py assets)
   voices/          пробы голосов
 deploy/            установка на Ubuntu: install-vps.sh, systemd, nginx, HTTPS

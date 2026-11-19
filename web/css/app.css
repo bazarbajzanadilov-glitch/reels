@@ -73,19 +73,28 @@
 .soon-mark { display: grid; place-items: center; width: var(--h-lg); height: var(--h-lg); border-radius: var(--r-lg); background: var(--accent-soft); color: var(--accent); }
 .soon-card p { max-width: 28rem; color: var(--muted); }
 
-/* ---------- 3. ИИ-помощник: ниши слева, темы справа, сценарий ниже ---------- */
+/* ---------- 3. Чат с ИИ: переписка, идеи из ответа — кнопки ---------- */
 .assistant.collapsed { gap: 0; }
 .assistant.collapsed .pane-head { padding-bottom: 0; border-bottom: 0; }
-.ai-body { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: var(--s-5); }
-.ai-niches { display: grid; gap: var(--s-1); align-content: start; max-height: 26rem; overflow: auto; overscroll-behavior: contain; padding-right: var(--s-1); }
-.ai-niches button { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: var(--h-sm); padding: 0 var(--s-3); border-radius: var(--r-sm); color: var(--muted); font-size: var(--t-sm); text-align: left; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
-.ai-niches button:hover { background: var(--surface-2); color: var(--text); }
-.ai-niches button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
-.ai-main { display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
-.ai-main-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
-.ai-search { flex: 1 1 14rem; }
-.ai-title { font-size: var(--t-md); }
-.ai-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: var(--s-2); }
+.ai-body { display: grid; gap: var(--s-3); min-width: 0; }
+.chat-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.chat-models { --seg-min: 6.5rem; flex: 0 1 16rem; }
+.chat-log { display: grid; gap: var(--s-3); align-content: start; max-height: 28rem; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-1); }
+.msg { display: grid; gap: var(--s-2); max-width: min(100%, 42rem); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); font-size: var(--t-sm); line-height: 1.5; overflow-wrap: anywhere; animation: reveal var(--dur) var(--ease); }
+.msg.user { justify-self: end; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.msg.bot { justify-self: start; width: 100%; background: var(--surface-2); border: 1px solid var(--line); }
+.msg-who { color: var(--muted); font-size: var(--t-xs); font-weight: 700; }
+.msg.typing { display: flex; gap: var(--s-1); width: auto; }
+.msg.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite alternate; }
+.msg.typing i:nth-child(2) { animation-delay: .2s; }
+.msg.typing i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { from { opacity: .25; } to { opacity: 1; } }
+.chat-ideas { display: grid; gap: var(--s-2); }
+.chat-ideas .ai-topic { justify-content: space-between; gap: var(--s-3); min-height: var(--h-lg); background: var(--surface); }
+.chat-ideas .ai-topic small { flex: none; color: var(--accent); font-size: var(--t-xs); font-weight: 700; }
+.chat-starters { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.chat-form { display: flex; align-items: flex-end; gap: var(--s-2); }
+.chat-form textarea { flex: 1; min-height: var(--h-md); max-height: 10rem; resize: none; }
 .ai-topic {
   display: flex;
   align-items: center;
@@ -361,10 +370,11 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
   .mode-art { width: 40px; height: 30px; }
   .row, .row-3 { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
   .pane { gap: var(--s-4); padding: var(--s-4); }
-  .ai-body { grid-template-columns: minmax(0, 1fr); }
+  .chat-log { max-height: 60vh; }
+  .chat-form .btn { padding-inline: var(--s-3); }
   /* Ленты вбок: полоса прокрутки скрыта, правый край затухает — видно, что дальше есть ещё;
      внутренний отступ не даёт кнопкам упираться в край ленты. */
-  .ai-niches, .history-controls .choice-group {
+  .history-controls .choice-group {
     display: flex;
     gap: var(--s-2);
     max-height: none;
@@ -376,17 +386,12 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
     scrollbar-width: none;
     mask-image: linear-gradient(to right, #000 calc(100% - var(--s-10)), transparent);
   }
-  .ai-niches::-webkit-scrollbar, .history-controls .choice-group::-webkit-scrollbar { display: none; }
-  .ai-niches button, .history-controls .choice-group button { flex: none; scroll-snap-align: start; }
+  .history-controls .choice-group::-webkit-scrollbar { display: none; }
+  .history-controls .choice-group button { flex: none; scroll-snap-align: start; }
   /* Голоса на телефоне — две строки, листаются вбок, а не 16 карточек столбиком. */
   .voice-grid { grid-template-columns: none; grid-template-rows: repeat(2, auto); grid-auto-flow: column; grid-auto-columns: 9.5rem; overflow-x: auto; margin: calc(-1 * var(--s-1)); padding: var(--s-1) var(--s-8) var(--s-1) var(--s-1); scroll-snap-type: x proximity; scrollbar-width: none; mask-image: linear-gradient(to right, #000 calc(100% - var(--s-10)), transparent); }
   .voice-grid::-webkit-scrollbar { display: none; }
   .voice-card { scroll-snap-align: start; }
-  .ai-niches button { min-height: var(--h-sm); border: 1px solid var(--line-2); border-radius: var(--r-pill); }
-  .ai-niches button[aria-pressed="true"] { border-color: var(--accent); box-shadow: none; }
-  .ai-topics { grid-template-columns: minmax(0, 1fr); }
-  .ai-topic { min-height: var(--h-lg); }
-  .ai-main-head .btn { flex: 1; }
   .subtitle-editor { grid-template-columns: minmax(0, 1fr); }
   .subtitle-preview-wrap { position: static; order: -1; width: min(11rem, 100%); margin: 0 auto; }
   .subtitle-preview-wrap:has(.h) { width: 100%; }

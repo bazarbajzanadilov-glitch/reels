@@ -169,34 +169,8 @@ def restore_cache(batch: Path, cache: Path = CACHE):
     return len(data["files"])
 
 
-NICHES = [
-    "Что если…", "Страшные истории", "Космос", "Выживание", "Тайны истории", "Психология",
-    "Мотивация", "Загадки природы", "Технологии будущего", "Городские легенды", "Животные",
-    "Невероятные совпадения", "Детективы", "Мифы и легенды", "Наука простыми словами",
-    "Путешествия", "Лайфхаки", "Истории успеха", "Неразгаданные тайны", "Сказки для взрослых",
-]
 STYLE_SCENE = "the hero stands on a hill at sunset looking at a small town below, wide shot"
 SUBTITLE_SCENE = "the hero walks through a quiet evening street with warm lights, medium shot"
-
-
-def topic_library(path: Path = ROOT / "web" / "data" / "topics.json", count=100):
-    """Разовая платная генерация библиотеки тем; дальше помощник листает её бесплатно."""
-    from factory import writer
-    from factory.config import key
-    from factory.http import generation_key
-
-    library = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
-    angles = ["", " — неочевидные и спорные", " — личные истории и случаи", " — короткие факты и вопросы"]
-    with generation_key(key()):
-        for niche in NICHES:
-            topics = library.get(niche, [])
-            for angle in angles:  # по 50: длинный список модель иногда обрывает или зацикливает
-                if len(topics) >= count:
-                    break
-                topics += [t for t in writer.topics(f"Темы для ниши «{niche}»{angle}", "ru", 50) if t not in topics]
-                library[niche] = topics[:count]
-                atomic_json(path, library)
-    return {niche: len(items) for niche, items in library.items()}
 
 
 def visual_assets(root: Path = ROOT / "web" / "img"):
@@ -240,7 +214,6 @@ if __name__ == "__main__":
     p.add_argument("--apply", action="store_true")
     p = commands.add_parser("restore-cache")
     p.add_argument("batch", type=Path)
-    commands.add_parser("topics")
     commands.add_parser("assets")
     args = parser.parse_args()
     if args.command == "backup":
@@ -251,7 +224,5 @@ if __name__ == "__main__":
         print(json.dumps(cleanup(days=max(1, args.days), apply=args.apply)))
     elif args.command == "restore-cache":
         print(json.dumps({"files": restore_cache(args.batch)}))
-    elif args.command == "topics":
-        print(json.dumps(topic_library(), ensure_ascii=False))
     elif args.command == "assets":
         print(json.dumps(visual_assets()))
