@@ -11,12 +11,6 @@ let OPT = null;
 const mins = () => +$("#minutes").value;
 const FLAGS = {ru: "🇷🇺", kk: "🇰🇿", en: "🇬🇧", de: "🇩🇪"};
 const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
-const GENRE_ICONS = {auto: "i-spark", survival: "i-compass", story: "i-book", horror: "i-ghost", mystery: "i-search",
-  comedy: "i-smile", facts: "i-bulb", motivation: "i-trend", fairy: "i-wand", scifi: "i-rocket", adventure: "i-map",
-  drama: "i-mask", romance: "i-heart", documentary: "i-doc", education: "i-cap", custom: "i-pen"};
-// мини-превью стиля: цветовая подложка плитки
-const STYLE_ICONS = {"2d": "s-flat", "3d": "s-cube", anime: "s-star", real: "s-camera", comic: "s-bubble",
-  watercolor: "s-drop", clay: "s-clay", pixel: "s-pixel", noir: "s-moon", paper: "s-paper", custom: "i-plus"};
 
 function setMins(m) {
   $("#minutes").value = m; $("#mval").textContent = m + " мин";
@@ -58,14 +52,17 @@ async function init() {
   tiles("#langs", "lang", Object.keys(OPT.langs).map(k =>
     [k, `<span class="flag">${FLAGS[k] || ""}</span><b>${OPT.langs[k]}</b><small>${LANG_NAMES[k] || ""}</small>`]), "ru", "tile-lang");
   tiles("#genres", "genre", Object.entries(OPT.genres).map(([k, l]) =>
-    [k, `${icon(GENRE_ICONS[k] || "i-book", "tile-ic")}<b>${esc(l)}</b>`]), "auto", "tile-icon");
+    [k, `<b>${esc(l)}</b>`]), "auto", "tile-text");
   seg("#tones", "tone", OPT.tones, "auto");
   tiles("#styles", "style", Object.entries(OPT.styles).map(([k, l]) =>
-    [k, `${icon(STYLE_ICONS[k] || "i-palette", "tile-ic")}<b>${esc(l.replace(" мультфильм", ""))}</b>`]), "2d", "tile-icon");
+    [k, `<b>${esc(l.replace(" мультфильм", ""))}</b>`]), "2d", "tile-text");
   tiles("#vmodels", "vmodel", Object.entries(OPT.video_models).map(([k, v]) =>
     [k, `<span class="dot"></span><b>${esc(v.label)}</b><small>${esc(v.note)}</small><em>${money(v.price)} <i>за сцену</i></em>`]), "pvideo", "row-option");
   let priceTimer;
   $("#maxprice").oninput = () => { clearTimeout(priceTimer); priceTimer = setTimeout(estimate, 300); };
+  $("#clips").oninput = () => { clipsTouched = true; $("#clips-value").textContent = `${$("#clips").value} из ${$("#clips").max}`;
+    clearTimeout(priceTimer); priceTimer = setTimeout(estimate, 200); };
+  $("#clips-reset").onclick = () => { clipsTouched = false; estimate(); };
   seg("#narrators", "narrator", OPT.narrators, "auto");
   seg("#endings", "ending", OPT.endings, "auto");
   seg("#audiences", "audience", OPT.audiences, "all");
@@ -94,13 +91,13 @@ let estimateController;
 function summary() {
   const label = (name, items) => { const v = val(name); const x = items?.[v]; return typeof x === "string" ? x : x?.label || v; };
   const rows = [
-    ["i-film", `${val("format") === "vertical" ? "9:16" : "16:9"} · ${mins()} мин`],
-    ["i-globe", `${FLAGS[val("lang")] || ""} ${LANG_NAMES[val("lang")] || ""}`],
-    ["i-book", `${label("genre", OPT.genres)} · ${label("tone", OPT.tones).toLowerCase()}`],
-    ["i-palette", label("style", OPT.styles)],
-    ["i-mic", `${$("#voice").value || ""} · ${OPT.voices[val("provider")].label}`],
+    ["Формат", `${val("format") === "vertical" ? "9:16" : "16:9"} · ${mins()} мин`],
+    ["Язык", LANG_NAMES[val("lang")] || ""],
+    ["Сюжет", `${label("genre", OPT.genres)} · ${label("tone", OPT.tones).toLowerCase()}`],
+    ["Стиль", label("style", OPT.styles)],
+    ["Голос", `${$("#voice").value || ""} · ${OPT.voices[val("provider")].label}`],
   ];
-  $("#summary-list").innerHTML = rows.map(([i, text]) => `<li>${icon(i, "ic")}<span>${esc(text)}</span></li>`).join("");
+  $("#summary-list").innerHTML = rows.map(([k, text]) => `<li><span>${k}</span><b>${esc(text)}</b></li>`).join("");
 }
 async function estimate() {
   if (!OPT) return;
@@ -110,6 +107,7 @@ async function estimate() {
   const controller = estimateController = new AbortController();
   const query = new URLSearchParams({minutes:mins(), animate:val("animate"), exact:ex,
     voice:val("provider"), style:val("style"), video:val("vmodel"), max:$("#maxprice").value || 0});
+  if (clipsTouched) query.set("clips", $("#clips").value);
   try {
     const response = await fetch(`/api/estimate?${query}`, {signal:controller.signal});
     if (!response.ok) throw new Error("estimate");
@@ -118,12 +116,34 @@ async function estimate() {
     $("#est").textContent = "≈ " + money(r.total);
     $("#price-big").textContent = "≈ " + money(r.total);
     $("#scene-summary").innerHTML = `<span><b>${r.scenes}</b>сцен</span><span><b>${r.clips || 0}</b>с анимацией</span>`;
+    showClips(r);
     $("#note").textContent = "Списывается по факту";
   } catch (error) {
     if (error.name !== "AbortError") {
       $("#est").textContent = "";
       $("#note").textContent = "Не удалось рассчитать цену";
     }
+  }
+}
+
+// сколько сцен оживить: по умолчанию 4 на минуту в пределах стандартного лимита, ползунком — любое число
+let clipsTouched = false;
+function showClips(r) {
+  const slider = $("#clips"), want = clipsTouched ? r.wanted : r.clips;
+  slider.max = Math.max(1, r.scenes);
+  slider.value = Math.max(1, want);
+  $("#clips-value").textContent = `${r.clips} из ${r.scenes}`;
+  $("#clips-reset").hidden = !clipsTouched;
+  const max = +$("#maxprice").value;
+  $("#maxprice").placeholder = "авто · " + r.budget.toFixed(2);
+  if (r.capped && max) {
+    const need = Math.ceil((r.minimum + r.wanted * r.clip_price) * 1.15 * 20) / 20;
+    $("#clips-note").innerHTML = `В лимит $${max.toFixed(2)} помещается ${r.clips} из ${r.wanted}. <button type="button" class="link" id="raise">Поднять лимит до $${need.toFixed(2)}</button>`;
+    $("#raise").onclick = () => { $("#maxprice").value = need.toFixed(2); $("#maxprice").dispatchEvent(new Event("change", {bubbles: true})); estimate(); };
+  } else if (r.capped) {
+    $("#clips-note").textContent = `В стандартный лимит $${r.budget.toFixed(2)} помещается ${r.clips}. Сдвиньте ползунок — лимит поднимется.`;
+  } else {
+    $("#clips-note").textContent = clipsTouched ? `Лимит подстроен: до $${r.budget.toFixed(2)}.` : "По умолчанию 4 на минуту ролика.";
   }
 }
 
@@ -150,8 +170,8 @@ $("#voice").onchange = () => { syncVoices(); summary(); };
 async function balance() {
   const r = await fetch("/api/balance").then(r => r.json()).catch(() => ({}));
   const el = $("#bal");
-  if (r.balance == null) { el.innerHTML = `${icon("i-wallet")}<span>Баланс</span><b>—</b>`; return; }
-  el.innerHTML = `${icon("i-wallet")}<span>Баланс</span><b>${money(r.balance)}</b>`;
+  if (r.balance == null) { el.innerHTML = `<span>Баланс</span><b>—</b>`; return; }
+  el.innerHTML = `<span>Баланс</span><b>${money(r.balance)}</b>`;
   el.classList.toggle("low", r.balance < 1);
 }
 
@@ -211,7 +231,7 @@ async function create() {
   $("#go").disabled = true;
   const body=JSON.stringify({topic, review:$("#review-script").checked, subtitles:subtitleSettings(), format:val("format"), minutes:+mins(), animate:val("animate"), reference:refData, scene_reference:sceneRefData, custom_style:$("#custom-style").value, custom_genre:$("#custom-genre").value,
       exact: !!refData && val("exact") === "1", lang:val("lang"), style:val("style"), genre:val("genre"), tone:val("tone"), narrator:val("narrator"), ending:val("ending"),
-      audience:val("audience"), notes:$("#notes").value, video_model:val("vmodel"), max_price:+$("#maxprice").value || null, voice_provider:val("provider"), voice:$("#voice").value});
+      audience:val("audience"), notes:$("#notes").value, video_model:val("vmodel"), max_price:+$("#maxprice").value || null, clips:clipsTouched && val("animate") !== "none" ? +$("#clips").value : null, voice_provider:val("provider"), voice:$("#voice").value});
   let r;
   try {
     const id=await creationKey(body);
@@ -261,7 +281,7 @@ function renderHistory() {
   const status=$("#history-status").value;
   const filtered=jobs.filter(j=>(status==="deleted"?!!j.deleted_at:!j.deleted_at) && (status==="all"||status==="deleted"||(status==="running"?["running","queued","cancelling"].includes(j.status):j.status===status)) && String(j.title||j.topic).toLocaleLowerCase().includes(query));
   $("#history-more").hidden=filtered.length<=historyVisible;
-  if (!filtered.length) { lastJobsMarkup = ""; $("#grid").innerHTML = `<div class="empty"><svg class="ic"><use href="#i-film"/></svg><b>${jobs.length?"Нет роликов под этим фильтром":"Здесь появятся ваши ролики"}</b><span>${jobs.length?"Измените поиск или фильтр":"Опишите идею выше и нажмите «Создать ролик»"}</span></div>`; return; }
+  if (!filtered.length) { lastJobsMarkup = ""; $("#grid").innerHTML = `<div class="empty"><b>${jobs.length?"Нет роликов под этим фильтром":"Здесь появятся ваши ролики"}</b><span>${jobs.length?"Измените поиск или фильтр":"Опишите идею выше и нажмите «Создать ролик»"}</span></div>`; return; }
   const markup = filtered.slice(0,historyVisible).map(j => {
     const f = `/files/${j.id}/`, done = j.status === "done";
     const price = j.cost && j.cost.total>0 ? (j.accounting==="pending"?"≥ ":"")+money(j.cost.total) : "≈"+money(j.estimate?.total);
@@ -400,12 +420,12 @@ function setupStudio() {
     tabs.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.project===mode)));
     $('#project-history').hidden=mode==='music'; $('#video-workspace').hidden=mode==='music'; $('#music-workspace').hidden=mode!=='music'; $('#checkout').hidden=mode==='music';
     if (mode==='music') return;
-    if (change) { const input=$('#'+(mode==='none'?'a0':'a1')); input.checked=true; input.dispatchEvent(new Event('change',{bubbles:true})); }
+    if (change) { const input=$('#'+(mode==='none'?'a0':'a2')); input.checked=true; input.dispatchEvent(new Event('change',{bubbles:true})); }
     $('#animation-settings').classList.toggle('no-animation',mode==='none');
   }
   tabs.forEach(b=>b.onclick=()=>choose(b.dataset.project));
   document.querySelectorAll('input[name=animate]').forEach(i=>i.addEventListener('change',()=>choose(val('animate')==='none'?'none':'animated',false)));
-  choose(val('animate')==='none'?'none':'animated',false);
+  choose(val('animate')==='none'?'none':'animated',val('animate')==='key');  // старое «ключевые» → число сцен
   const captionButtons=[...document.querySelectorAll('[data-caption]')];
   function syncCaptions(){captionButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.caption===$('#subtitle-mode').value)));}
   captionButtons.forEach(b=>b.onclick=()=>{ $('#subtitle-mode').value=b.dataset.caption; $('#subtitle-mode').dispatchEvent(new Event('change',{bubbles:true}));syncCaptions(); });

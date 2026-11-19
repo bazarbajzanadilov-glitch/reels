@@ -582,6 +582,7 @@ class Handler(BaseHTTPRequestHandler):
             options["style"],
             options["video_model"],
             options["max_price"],
+            options["clips"],
         )
         if plan["minimum"] > plan["budget"]:
             raise InvalidRequest(

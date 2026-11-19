@@ -117,6 +117,7 @@ def process(store, job):
                             ("custom_genre", ""),
                             ("video_model", VIDEO_DEFAULT),
                             ("max_price", None),
+                            ("clips", None),
                             ("subtitles", None),
                         ]
                     },

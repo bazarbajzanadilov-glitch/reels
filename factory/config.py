@@ -31,6 +31,7 @@ FORMATS = {
 }
 SCENE_PAD = 0.25  # пауза после фразы, сек
 SECONDS_PER_SCENE = 6.3  # для расчёта числа сцен по длине ролика
+CLIPS_PER_MINUTE = 4  # анимированных сцен на минуту по умолчанию
 
 BUDGET_SAFETY = (
     1.00  # планируем на весь лимит; перед анимацией пересчёт по реально потраченному
@@ -319,14 +320,14 @@ AUDIENCES = {
 STYLES = {
     "2d": {
         "label": "2D мультфильм",
-        "budget": (0.35, 2.00),
+        "budget": (0.50, 3.00),
         "prompt": "flat 2D vector illustration, minimalist cartoon style, cinematic palette, "
         "soft cinematic rim light, simple clean shapes, smooth gradients",
         "motion": "Flat 2D cartoon animation, simple smooth motion",
     },
     "3d": {
         "label": "3D мультфильм",
-        "budget": (0.45, 4.00),
+        "budget": (0.60, 4.00),
         "camera_fly": True,
         "prompt": "3D animated movie still, Pixar-like stylized 3D render, soft global illumination, subsurface skin, "
         "detailed textures, cinematic depth of field, volumetric light",
@@ -335,21 +336,21 @@ STYLES = {
     },
     "anime": {
         "label": "Аниме",
-        "budget": (0.35, 2.00),
+        "budget": (0.50, 3.00),
         "prompt": "anime style illustration, cel shading, bold clean line art, expressive eyes, vibrant colors, "
         "dramatic anime lighting",
         "motion": "Anime animation, expressive smooth motion",
     },
     "real": {
         "label": "Реализм",
-        "budget": (0.35, 2.00),
+        "budget": (0.50, 3.00),
         "prompt": "photorealistic cinematic film still, realistic human, natural skin, 35mm lens, "
         "dramatic cinematic lighting, shallow depth of field",
         "motion": "Realistic cinematic footage, natural motion",
     },
     "comic": {
         "label": "Комикс",
-        "budget": (0.35, 2.00),
+        "budget": (0.50, 3.00),
         "prompt": "comic book illustration, bold ink outlines, halftone shading, dynamic composition, "
         "saturated graphic colors",
         "motion": "Comic book style animation, punchy motion",
@@ -363,7 +364,7 @@ for key, label, prompt in [
     ("paper", "Бумажный", "layered paper cutout illustration, handmade paper textures"),
     ("custom", "Свой вариант", "cinematic illustration"),
 ]:
-    STYLES[key] = {"label": label, "budget": (0.35, 2.00), "prompt": prompt, "motion": "Smooth cinematic motion"}
+    STYLES[key] = {"label": label, "budget": (0.50, 3.00), "prompt": prompt, "motion": "Smooth cinematic motion"}
 
 STYLE_TAIL = ", no text, no letters, no watermark"
 STYLE = STYLES["2d"]["prompt"] + STYLE_TAIL

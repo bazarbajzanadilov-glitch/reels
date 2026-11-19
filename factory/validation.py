@@ -32,6 +32,13 @@ class PayloadTooLarge(InvalidRequest):
     status = 413
 
 
+def clip_count(value):
+    """Сколько сцен оживить: пусто — по умолчанию (None), иначе целое 0…300."""
+    if value in (None, ""):
+        return None
+    return int(number(value, "Число анимированных сцен", 0, 300))
+
+
 def number(value, label, low, high, default=None):
     if value in (None, "") and default is not None:
         return default
@@ -133,6 +140,7 @@ def job_options(data):
         "custom_style": text(data.get("custom_style", ""), "Свой стиль", 600),
         "custom_genre": text(data.get("custom_genre", ""), "Свой жанр", 600),
         "max_price": round(maximum, 2) if maximum else None,
+        "clips": clip_count(data.get("clips")),
         "subtitles": subtitles.normalize(data.get("subtitles")),
     }
 
@@ -147,4 +155,5 @@ def estimate_options(query):
         "style": choice(get("style"), STYLES, "2d", "стиль"),
         "video": choice(get("video"), VIDEO_MODELS, VIDEO_DEFAULT, "модель видео"),
         "max_price": number(get("max"), "Бюджет", 0, 100, default=0) or None,
+        "clips": clip_count(get("clips")),
     }

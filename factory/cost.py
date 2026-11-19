@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from .config import (
     API,
     BUDGET_SAFETY,
+    CLIPS_PER_MINUTE,
     SECONDS_PER_SCENE,
     STYLES,
     VIDEO_DEFAULT,
@@ -39,20 +40,27 @@ def estimate(
     style: str = "2d",
     video: str = VIDEO_DEFAULT,
     max_price: float | None = None,
+    clips: int | None = None,
 ) -> dict:
-    """max_price — лимит клиента; без него — лимит по стилю (budget)."""
+    """max_price — лимит клиента; без него — лимит по стилю (budget), поднятый под выбранное число клипов.
+    clips — сколько сцен оживить; без него — CLIPS_PER_MINUTE на минуту (3D — все сцены)."""
     clip = VIDEO_MODELS.get(video, VIDEO_MODELS[VIDEO_DEFAULT])["price"]
     n = scenes_for(minutes)
     text = 0.005 if n <= 30 else 0.004 * (2 + n / 25)
     tts = n * CHARS_PER_SCENE * VOICES.get(voice, VOICES["gemini"])["price"]
     imgs = (n + 1) * (PRICE_IMAGE_REF if exact else PRICE_IMAGE)
     base = text + tts + imgs
-    if animate == "key" and STYLES.get(style, {}).get("camera_fly"):
-        animate = "all"  # 3D — полёты камеры во всех сценах, сколько позволяет бюджет
-    want = (
-        n if animate == "all" else (max(1, round(n / 2.5)) if animate == "key" else 0)
-    )
-    cap = max_price if max_price else budget(minutes, style)
+    fly = STYLES.get(style, {}).get("camera_fly")  # 3D — полёты камеры во всех сценах, сколько позволяет бюджет
+    default = min(n, max(1, round(CLIPS_PER_MINUTE * minutes)))
+    if animate == "none":
+        want = 0
+    elif clips is not None:
+        want = min(n, max(0, clips))
+    else:
+        want = n if fly else default
+    cap = max_price or budget(minutes, style)
+    if not max_price and clips is not None:  # клиент сам выбрал число клипов — лимит растёт под них с запасом
+        cap = max(cap, round((base + want * clip) * 1.15 + 0.01, 2))
     can = max(0, int((cap * BUDGET_SAFETY - base) / clip))
     clips = min(want, can)
     parts = {
@@ -70,6 +78,8 @@ def estimate(
         "total": round(sum(parts.values()), 2),
         "budget": cap,
         "minimum": round(base, 3),
+        "clip_price": clip,
+        "default_clips": default,
     }
 
 

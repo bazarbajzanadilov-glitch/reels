@@ -34,6 +34,7 @@ def run(
     custom_genre: str = "",
     video_model: str = VIDEO_DEFAULT,
     max_price: float | None = None,
+    clips: int | None = None,
     prior_spent: float = 0.0,
     subtitles: dict | None = None,
     script_only: bool = False,
@@ -42,10 +43,10 @@ def run(
         from .alignment import model
 
         model()  # Resolve the local engine before any paid generation.
-    cap = max_price if max_price is not None else cost.budget(minutes, style)
     plan = cost.estimate(
-        minutes, animate, exact, voice_provider, style, video_model, cap
+        minutes, animate, exact, voice_provider, style, video_model, max_price, clips
     )
+    cap = plan["budget"]  # лимит клиента или авто-лимит под выбранное число клипов
     if plan["minimum"] > cap:
         raise RuntimeError(
             f"Бюджет слишком мал: без анимации нужно примерно ${plan['minimum']:.2f}"
@@ -127,8 +128,11 @@ def run(
         )
         clip_limit = data.setdefault(
             "clip_limit",
-            cost.clips_allowed(
-                minutes, base + prior_spent, 0.0, style, video_model, max_price
+            min(
+                plan["wanted"],
+                cost.clips_allowed(
+                    minutes, base + prior_spent, 0.0, style, video_model, cap
+                ),
             ),
         )
         atomic_json(script, data)
