@@ -238,7 +238,7 @@
       <a class="btn" id="dass" download hidden>ASS</a>
     </div>
     <p class="dialog-status" id="dialog-status" role="status"></p>
-    <div class="btns quiet"><button type="button" class="btn ghost" id="edit-script">Сценарий</button><button type="button" class="btn ghost" id="edit-subtitles">Субтитры</button><button type="button" class="btn ghost danger" id="trash-job">Удалить</button></div>
+    <div class="btns quiet"><button type="button" class="btn ghost" id="edit-script">Сценарий</button><button type="button" class="btn ghost danger" id="trash-job">Удалить</button></div>
   </div>
   <button type="button" class="x" id="close-dialog" aria-label="Закрыть">×</button>
 </div></dialog>
@@ -260,12 +260,5 @@
   <div class="editor-actions"><button type="button" class="btn ghost danger" id="script-trash">Удалить</button><span class="grow"></span><button type="button" class="btn" id="script-save">Сохранить</button><button type="button" class="btn main" id="script-render">Собрать видео</button></div>
 </div></dialog>
 
-<dialog id="subtitle-dialog" aria-labelledby="subtitle-heading"><div class="editor-shell">
-  <div class="editor-heading"><h2 id="subtitle-heading">Субтитры</h2><button type="button" class="x" id="subtitle-edit-close" aria-label="Закрыть редактор субтитров">×</button></div>
-  <p class="hint">Текст и время в формате SRT. Оформление — из шага «Субтитры». Перемонтаж бесплатный.</p>
-  <textarea id="subtitle-srt-editor" aria-label="Текст и время SRT" spellcheck="false"></textarea>
-  <p id="subtitle-edit-status" role="status"></p>
-  <div class="editor-actions"><span class="grow"></span><button type="button" class="btn main" id="subtitle-remount">Применить и перемонтировать</button></div>
-</div></dialog>
 </body>
 </html>

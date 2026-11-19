@@ -35,25 +35,6 @@ async function saveScript(start) {
   finally { button.disabled=false; }
 }
 $("#script-save").onclick=()=>saveScript(false);$("#script-render").onclick=()=>saveScript(true);
-$("#edit-subtitles").onclick=async()=>{
-  try {
-    const response=await fetch(`/api/jobs/${cur.id}/script`);const script=await response.json();
-    if (!response.ok) throw new Error(script.error);
-    editingJob=cur;$("#subtitle-srt-editor").value=script.srt||"";$("#subtitle-edit-status").textContent="";
-    dlg.close();$("#subtitle-dialog").showModal();
-  } catch(error) { $("#dialog-status").textContent=error.message; }
-};
-$("#subtitle-edit-close").onclick=()=>$("#subtitle-dialog").close();
-$("#subtitle-remount").onclick=async()=>{
-  if ($("#subtitle-remount").disabled) return;
-  $("#subtitle-remount").disabled=true;
-  try {
-    if (subtitleSettings().mode==="off") throw new Error("Включите субтитры и выберите оформление в основной форме");
-    await postJob(editingJob.id,"remount",{subtitles:subtitleSettings(),srt:$("#subtitle-srt-editor").value});
-    $("#subtitle-dialog").close();await load();
-  } catch(error) { $("#subtitle-edit-status").textContent=error.message; }
-  finally { $("#subtitle-remount").disabled=false; }
-};
 $("#trash-job").onclick=async()=>{
   try { await postJob(cur.id,"trash",{});dlg.close();await load(); }
   catch(error) { $("#dialog-status").textContent=error.message; }

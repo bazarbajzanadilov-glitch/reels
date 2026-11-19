@@ -521,7 +521,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(store.retry(jid, MAX_QUEUE))
             return self._json(store.cancel(jid))
         edit = re.fullmatch(
-            r"/api/jobs/([\w-]+)/(script|render|remount|trash|restore)", self.path
+            r"/api/jobs/([\w-]+)/(script|render|trash|restore)", self.path
         )
         if edit:
             if self._limited("editing", 30):
@@ -536,20 +536,10 @@ class Handler(BaseHTTPRequestHandler):
                 if action in ("script", "render"):
                     saved = editing.save_script(directory, data)
                     return {"title": saved["title"]}
-                script = editing.load_script(directory)
-                script["subtitles"] = subtitles.normalize(data.get("subtitles"))
-                if data.get("srt"):
-                    script["subtitle_cues"] = editing.parse_srt(data["srt"])
-                else:
-                    script.pop("subtitle_cues", None)
-                from factory.files import atomic_json
-
-                atomic_json(directory / "script.json", script)
-                return {"subtitles": script["subtitles"]}
 
             return self._json(
                 jobs_store().edit(
-                    jid, transform, action if action in ("render", "remount") else None
+                    jid, transform, action if action == "render" else None
                 )
             )
         if self.path == "/api/subtitles/preview":
