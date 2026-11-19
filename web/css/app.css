@@ -79,7 +79,9 @@
 .ai-body { display: grid; gap: var(--s-3); min-width: 0; }
 .chat-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); }
 .chat-models { --seg-min: 6.5rem; flex: 0 1 16rem; }
-.chat-log { display: grid; gap: var(--s-3); align-content: start; max-height: 28rem; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-1); }
+.chat-log { display: grid; gap: var(--s-3); align-content: start; height: 32rem; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg); }
+.chat-log.empty { align-content: center; justify-items: center; }
+.chat-empty { color: var(--muted); font-size: var(--t-sm); }
 .msg { display: grid; gap: var(--s-2); max-width: min(100%, 42rem); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); font-size: var(--t-sm); line-height: 1.5; overflow-wrap: anywhere; animation: reveal var(--dur) var(--ease); }
 .msg.user { justify-self: end; background: var(--accent-soft); border: 1px solid var(--accent-line); }
 .msg.bot { justify-self: start; width: 100%; background: var(--surface-2); border: 1px solid var(--line); }
@@ -92,9 +94,14 @@
 .chat-ideas { display: grid; gap: var(--s-2); }
 .chat-ideas .ai-topic { justify-content: space-between; gap: var(--s-3); min-height: var(--h-lg); background: var(--surface); }
 .chat-ideas .ai-topic small { flex: none; color: var(--accent); font-size: var(--t-xs); font-weight: 700; }
-.chat-starters { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+/* Подсказки — лента вбок, край затухает: видно, что есть ещё */
+.chat-starters { display: flex; gap: var(--s-2); overflow-x: auto; margin: calc(-1 * var(--s-1)); padding: var(--s-1) var(--s-8) var(--s-1) var(--s-1); scroll-snap-type: x proximity; overscroll-behavior-x: contain; scrollbar-width: none; mask-image: linear-gradient(to right, #000 calc(100% - var(--s-10)), transparent); }
+.chat-starters::-webkit-scrollbar { display: none; }
+.chat-starters .chip { flex: none; white-space: nowrap; scroll-snap-align: start; }
 .chat-form { display: flex; align-items: flex-end; gap: var(--s-2); }
 .chat-form textarea { flex: 1; min-height: var(--h-md); max-height: 10rem; resize: none; }
+.chat-form .btn.icon { width: var(--h-md); height: var(--h-md); flex: none; }
+.ai-status:empty { display: none; }
 .ai-topic {
   display: flex;
   align-items: center;
@@ -370,8 +377,9 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
   .mode-art { width: 40px; height: 30px; }
   .row, .row-3 { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
   .pane { gap: var(--s-4); padding: var(--s-4); }
-  .chat-log { max-height: 60vh; }
-  .chat-form .btn { padding-inline: var(--s-3); }
+  .chat-log { height: 55vh; height: 55dvh; padding: var(--s-2); }
+  .msg { padding: var(--s-2) var(--s-3); }
+  .chat-form textarea { font-size: var(--t-md); }
   /* Ленты вбок: полоса прокрутки скрыта, правый край затухает — видно, что дальше есть ещё;
      внутренний отступ не даёт кнопкам упираться в край ленты. */
   .history-controls .choice-group {

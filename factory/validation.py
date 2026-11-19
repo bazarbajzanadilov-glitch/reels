@@ -20,6 +20,7 @@ from .config import (
 )
 
 MAX_BODY = 6 * 1024 * 1024
+from .config import MAX_PRICE  # noqa: E402 — потолок расходов на один ролик
 MAX_IMAGE = 4 * 1024 * 1024
 MAX_PIXELS = 20_000_000
 MAX_SCRIPT = 20_000
@@ -109,7 +110,7 @@ def job_options(data):
         VOICES[provider]["default"],
         "голос",
     )
-    maximum = number(data.get("max_price"), "Бюджет", 0.05, 100, default=0)
+    maximum = number(data.get("max_price"), "Бюджет", 0.05, MAX_PRICE, default=0)
     if data.get("exact") not in (None, True, False):
         raise InvalidRequest("Некорректный режим сходства")
     return {
@@ -158,6 +159,6 @@ def estimate_options(query):
         "voice": choice(get("voice"), VOICES, "gemini", "озвучка"),
         "style": choice(get("style"), STYLES, "2d", "стиль"),
         "video": choice(get("video"), VIDEO_MODELS, VIDEO_DEFAULT, "модель видео"),
-        "max_price": number(get("max"), "Бюджет", 0, 100, default=0) or None,
+        "max_price": number(get("max"), "Бюджет", 0, MAX_PRICE, default=0) or None,
         "clips": clip_count(get("clips")),
     }

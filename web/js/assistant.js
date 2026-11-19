@@ -46,8 +46,8 @@ function renderChat() {
     ? `<div class="msg user"><p>${esc(m.content)}</p></div>`
     : `<div class="msg bot"><span class="msg-who">${esc(m.model || "ИИ")}</span>${messageHtml(m.content)}</div>`).join("")
     + (chatBusy ? `<div class="msg bot typing" aria-label="ИИ печатает"><i></i><i></i><i></i></div>` : "");
-  log.hidden = !chatHistory.length && !chatBusy;
-  $("#chat-starters").hidden = chatHistory.length > 0;
+  log.classList.toggle("empty", !chatHistory.length && !chatBusy);
+  if (!chatHistory.length && !chatBusy) log.innerHTML = `<p class="chat-empty">Спросите про идею для ролика</p>`;
   log.scrollTop = log.scrollHeight;
 }
 
@@ -74,7 +74,7 @@ async function sendChat(text) {
     const r = await response.json().catch(() => ({}));
     if (!response.ok || !r.reply) throw new Error(r.error || (response.status === 429 ? "Слишком много сообщений. Подождите минуту" : "Не удалось получить ответ"));
     chatHistory.push({role: "assistant", content: r.reply, model: label});
-    $("#ai-status").textContent = "Нажмите на идею в ответе — она станет темой ролика.";
+    $("#ai-status").textContent = "";
   } catch (error) {
     chatHistory.pop();
     $("#chat-input").value = text; fitChatInput();
@@ -110,7 +110,7 @@ $("#chat-log").onclick = e => {
   setIdeaTab("idea");
   renderChat();
   $("#ai-status").classList.remove("error");
-  $("#ai-status").textContent = `✓ «${topic.slice(0, 200)}» — идея ролика. Настройте параметры ниже и нажмите «Создать ролик».`;
+  $("#ai-status").textContent = "✓ Тема выбрана";
 };
 
 function setIdeaTab(name) {
@@ -127,7 +127,7 @@ function setAssistantOpen(open) {
   $("#ai-body").hidden = !open;
   $("#ai-toggle").textContent = open ? "Свернуть" : "Открыть";
   $("#ai-toggle").setAttribute("aria-expanded", String(open));
-  $("#ai-sub").textContent = open ? "Обсудите идею — ИИ подкинет темы для ролика" : "Свёрнуто — откройте, чтобы обсудить идею с ИИ";
+  $("#ai-sub").textContent = "Подкинет идеи для ролика";
   $("#assistant").classList.toggle("collapsed", !open);
   aiStore.set("open", open);
 }

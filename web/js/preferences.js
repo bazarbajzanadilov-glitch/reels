@@ -16,7 +16,7 @@ function restorePreferences() {
   if (value.clipsTouched && value.clips) { clipsTouched=true; $("#clips").value=value.clips; }
   if (value.voiceSpeed) { $("#voice-speed").value=value.voiceSpeed; $("#voice-speed").dispatchEvent(new Event("input")); }
   if (typeof value.channelName==="string") $("#channel-name").value=value.channelName;
-  if (typeof value.maxprice==="string" && +value.maxprice>0) { $("#maxprice").value=value.maxprice; $("#maxprice-range").value=value.maxprice; }
+  // лимит расходов не восстанавливается: каждый новый ролик начинается с $3
   $("#review-script").checked=value.review!==false;
   if (value.subtitles) applySubtitlePreset(value.subtitles);
 }

@@ -170,17 +170,20 @@ function showClips(r) {
   refreshSliders();
   $("#clips-reset").hidden = !clipsTouched;
   if (r.capped) {
-    const need = Math.min(100, Math.ceil((r.minimum + r.wanted * r.clip_price) * 1.15 * 4) / 4);
-    $("#clips-note").innerHTML = `В лимит $${r.budget.toFixed(2)} помещается ${r.clips} из ${r.wanted}. <button type="button" class="link" id="raise">Поднять лимит до $${need.toFixed(2)}</button>`;
-    $("#raise").onclick = () => setLimit(need);
+    const need = Math.min(LIMIT_MAX, Math.ceil((r.minimum + r.wanted * r.clip_price) * 1.15 * 4) / 4);
+    $("#clips-note").innerHTML = need > r.budget
+      ? `В лимит $${r.budget.toFixed(2)} помещается ${r.clips} из ${r.wanted}. <button type="button" class="link" id="raise">Поднять лимит до $${need.toFixed(2)}</button>`
+      : `В лимит $${r.budget.toFixed(2)} помещается ${r.clips} из ${r.wanted} — это максимум на один ролик.`;
+    if ($("#raise")) $("#raise").onclick = () => setLimit(need);
   } else {
     $("#clips-note").textContent = clipsTouched ? `Все ${r.wanted} сцен помещаются в лимит $${r.budget.toFixed(2)}.` : "По умолчанию 4 анимированные сцены на минуту.";
   }
 }
-// Лимит расходов — ползунок; скрытое #maxprice хранит значение для формы и настроек.
+// Лимит расходов — ползунок до $10 на ролик, при каждом открытии $3; скрытое #maxprice хранит значение для формы.
+const LIMIT_MAX = 10;
 function setLimit(value) {
   const input = $("#maxprice");
-  input.value = Math.min(100, Math.max(0.25, Math.round(+value * 4) / 4)).toFixed(2);
+  input.value = Math.min(LIMIT_MAX, Math.max(0.25, Math.round(+value * 4) / 4)).toFixed(2);
   $("#maxprice-range").value = input.value;
   input.dispatchEvent(new Event("change", {bubbles: true}));
   refreshSliders();

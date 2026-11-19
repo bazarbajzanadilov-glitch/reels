@@ -30,6 +30,7 @@
   <symbol id="i-person" viewBox="0 0 64 64"><circle cx="32" cy="20" r="10"/><path d="M14 60c0-12 8-21 18-21s18 9 18 21"/></symbol>
   <symbol id="i-place" viewBox="0 0 96 64"><path d="M4 58 30 26l14 16 12-12 36 28z"/><circle cx="70" cy="16" r="7"/><path d="M2 60h92"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
   <symbol id="fmt-v" viewBox="0 0 14 20"><rect x="1.5" y="1.5" width="11" height="17" rx="2.5"/></symbol>
   <symbol id="fmt-h" viewBox="0 0 22 14"><rect x="1.5" y="1.5" width="19" height="11" rx="2.5"/></symbol>
@@ -88,7 +89,7 @@
           <section class="pane assistant" id="assistant" aria-labelledby="h-ai">
             <header class="pane-head">
               <span class="step" aria-hidden="true"><svg class="ic"><use href="#i-spark"/></svg></span>
-              <div><h2 id="h-ai">Чат с ИИ</h2><p class="pane-sub" id="ai-sub">Обсудите идею — ИИ подкинет темы для ролика</p></div>
+              <div><h2 id="h-ai">Чат с ИИ</h2><p class="pane-sub" id="ai-sub">Подкинет идеи для ролика</p></div>
               <button type="button" class="btn ghost sm" id="ai-toggle" aria-expanded="true" aria-controls="ai-body">Свернуть</button>
             </header>
             <div class="ai-body" id="ai-body">
@@ -97,16 +98,21 @@
                 <button type="button" class="btn ghost sm" id="chat-clear"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Новый чат</button>
               </div>
               <div class="chat-log" id="chat-log" aria-live="polite"></div>
-              <div class="chat-starters" id="chat-starters">
-                <button type="button" class="chip">Подкинь 5 идей для страшилок</button>
-                <button type="button" class="chip">Идеи про космос для детей</button>
-                <button type="button" class="chip">Что снять про мою кофейню?</button>
+              <div class="chat-starters" id="chat-starters" aria-label="Подсказки">
+                <button type="button" class="chip">5 идей для страшилок</button>
+                <button type="button" class="chip">Космос для детей</button>
+                <button type="button" class="chip">Ролик про мою кофейню</button>
+                <button type="button" class="chip">Мотивация на утро</button>
+                <button type="button" class="chip">Тайны истории</button>
+                <button type="button" class="chip">Лайфхаки для дома</button>
+                <button type="button" class="chip">Факты о животных</button>
+                <button type="button" class="chip">Городские легенды</button>
               </div>
               <form class="chat-form" id="chat-form">
-                <textarea id="chat-input" rows="1" maxlength="4000" placeholder="Напишите, о чём хотите ролик…" aria-label="Сообщение для ИИ"></textarea>
-                <button type="submit" class="btn main" id="chat-send">Отправить</button>
+                <textarea id="chat-input" rows="1" maxlength="4000" placeholder="Сообщение" aria-label="Сообщение для ИИ"></textarea>
+                <button type="submit" class="btn main icon" id="chat-send" aria-label="Отправить"><svg class="ic" aria-hidden="true"><use href="#i-send"/></svg></button>
               </form>
-              <p class="ai-status" id="ai-status" role="status">Нажмите на идею в ответе — она станет темой ролика. Каждое сообщение — небольшой платный запрос.</p>
+              <p class="ai-status" id="ai-status" role="status"></p>
             </div>
           </section>
 
@@ -159,9 +165,9 @@
             </div>
             <p class="hint clips-hint"><span id="clips-note">По умолчанию 4 анимированные сцены на минуту.</span> <button type="button" class="link" id="clips-reset" hidden>Вернуть по умолчанию</button></p>
             <div class="slider" id="budget-field" data-prefix="$" data-decimals="2" data-source="number">
-              <div class="slider-head"><label for="maxprice-range">Лимит расходов <small>(не больше этой суммы)</small></label><button type="button" class="slider-value" aria-label="Ввести лимит точно"></button><input type="number" id="maxprice" min="0.25" max="100" step="0.25" value="3" aria-label="Лимит расходов в долларах" hidden></div>
-              <input type="range" id="maxprice-range" min="0.25" max="100" step="0.25" value="3">
-              <div class="slider-scale"><span>$0.25</span><span>$100</span></div>
+              <div class="slider-head"><label for="maxprice-range">Лимит расходов <small>(не больше этой суммы)</small></label><button type="button" class="slider-value" aria-label="Ввести лимит точно"></button><input type="number" id="maxprice" min="0.25" max="10" step="0.25" value="3" aria-label="Лимит расходов в долларах" hidden></div>
+              <input type="range" id="maxprice-range" min="0.25" max="10" step="0.25" value="3">
+              <div class="slider-scale"><span>$0.25</span><span>$10</span></div>
             </div>
           </section>
 

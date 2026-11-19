@@ -8,6 +8,7 @@ from .config import (
     API,
     BUDGET_SAFETY,
     CLIPS_PER_MINUTE,
+    MAX_PRICE,
     SECONDS_PER_SCENE,
     STYLES,
     VIDEO_DEFAULT,
@@ -61,6 +62,7 @@ def estimate(
     cap = max_price or budget(minutes, style)
     if not max_price and clips is not None:  # клиент сам выбрал число клипов — лимит растёт под них с запасом
         cap = max(cap, round((base + want * clip) * 1.15 + 0.01, 2))
+    cap = min(cap, MAX_PRICE)  # больше потолка на один ролик не тратим никогда
     can = max(0, int((cap * BUDGET_SAFETY - base) / clip))
     clips = min(want, can)
     parts = {
@@ -104,7 +106,7 @@ def clips_allowed(
     max_price: float | None = None,
 ) -> int:
     """Сколько клипов ещё можно сделать, чтобы не превысить лимит. reserve — что ещё предстоит оплатить (обложка)."""
-    cap = max_price if max_price else budget(minutes, style)
+    cap = min(max_price if max_price else budget(minutes, style), MAX_PRICE)
     clip = VIDEO_MODELS.get(video, VIDEO_MODELS[VIDEO_DEFAULT])["price"]
     return max(0, int((cap * BUDGET_SAFETY - spent_now - reserve) / clip))
 
