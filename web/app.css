@@ -81,7 +81,7 @@ button { cursor: pointer; }
 .tiles-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tiles-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .tiles-icons { grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr)); }
-.tiles-styles { grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); }
+.tiles-styles { grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); }
 .tiles > input, .seg > input, .list > input, .reference-item input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .tile {
   position: relative; display: flex; flex-direction: column; gap: .2rem; min-width: 0; text-align: left;
@@ -103,11 +103,6 @@ input:focus-visible + .tile { outline: 2px solid var(--accent); outline-offset: 
 .tile-icon b { font-size: .8125rem; line-height: 1.2; }
 input:checked + .tile-icon::after, input:checked + .tile-lang::after { display: none; }
 .tile-ic { width: 1.1rem; height: 1.1rem; color: var(--accent); }
-.tile-style { padding: .45rem .45rem .55rem; gap: .45rem; }
-.tile-style b { font-size: .8125rem; padding: 0 .2rem; }
-.swatch { display: grid; place-items: center; aspect-ratio: 16 / 9; border-radius: .55rem; color: var(--accent); opacity: .85; }
-input:checked + .tile .swatch { opacity: 1; }
-.swatch svg { width: 1.2rem; height: 1.2rem; }
 .tile-format { flex-direction: row; align-items: center; gap: .75rem; flex-wrap: wrap; }
 .tile-format small { flex-basis: 100%; }
 .frame { border: 2px solid var(--accent); border-radius: .25rem; opacity: .7; }

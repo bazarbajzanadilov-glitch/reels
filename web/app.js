@@ -15,13 +15,8 @@ const GENRE_ICONS = {auto: "i-spark", survival: "i-compass", story: "i-book", ho
   comedy: "i-smile", facts: "i-bulb", motivation: "i-trend", fairy: "i-wand", scifi: "i-rocket", adventure: "i-map",
   drama: "i-mask", romance: "i-heart", documentary: "i-doc", education: "i-cap", custom: "i-pen"};
 // мини-превью стиля: цветовая подложка плитки
-const STYLE_SWATCH = {
-  "2d": "linear-gradient(135deg,#f6c96b,#e2725b 55%,#3b4a7a)", "3d": "radial-gradient(circle at 35% 35%,#ffe3b3,#d98c5f 45%,#5b3a6e)",
-  anime: "linear-gradient(160deg,#ffd1e8,#a5b4ff 60%,#5d6bd8)", real: "linear-gradient(160deg,#c9b8a3,#6b5e52 55%,#2b2622)",
-  comic: "repeating-radial-gradient(circle at 30% 30%,#ffd54a 0 3px,#ff7a59 3px 6px)", watercolor: "radial-gradient(circle at 30% 40%,#bfe4ff,#f7d6e6 50%,#fdf3d7)",
-  clay: "radial-gradient(circle at 40% 35%,#ffb38a,#d0654a 55%,#7a3b2c)", pixel: "conic-gradient(#5eead4 0 25%,#818cf8 0 50%,#f472b6 0 75%,#facc15 0)",
-  noir: "linear-gradient(135deg,#e5e5e5,#6b6b6b 45%,#111)", paper: "linear-gradient(135deg,#f4e9d8,#d9c3a1 60%,#a98b62)",
-  custom: "linear-gradient(135deg,#2a2c33,#3a3d46)"};
+const STYLE_ICONS = {"2d": "s-flat", "3d": "s-cube", anime: "s-star", real: "s-camera", comic: "s-bubble",
+  watercolor: "s-drop", clay: "s-clay", pixel: "s-pixel", noir: "s-moon", paper: "s-paper", custom: "i-plus"};
 
 function setMins(m) {
   $("#minutes").value = m; $("#mval").textContent = m + " мин";
@@ -66,7 +61,7 @@ async function init() {
     [k, `${icon(GENRE_ICONS[k] || "i-book", "tile-ic")}<b>${esc(l)}</b>`]), "auto", "tile-icon");
   seg("#tones", "tone", OPT.tones, "auto");
   tiles("#styles", "style", Object.entries(OPT.styles).map(([k, l]) =>
-    [k, `<span class="swatch" style="background:${STYLE_SWATCH[k] || STYLE_SWATCH.custom}">${k === "custom" ? icon("i-plus") : ""}</span><b>${esc(l.replace(" мультфильм", ""))}</b>`]), "2d", "tile-style");
+    [k, `${icon(STYLE_ICONS[k] || "i-palette", "tile-ic")}<b>${esc(l.replace(" мультфильм", ""))}</b>`]), "2d", "tile-icon");
   tiles("#vmodels", "vmodel", Object.entries(OPT.video_models).map(([k, v]) =>
     [k, `<span class="dot"></span><b>${esc(v.label)}</b><small>${esc(v.note)}</small><em>${money(v.price)} <i>за сцену</i></em>`]), "pvideo", "row-option");
   let priceTimer;
