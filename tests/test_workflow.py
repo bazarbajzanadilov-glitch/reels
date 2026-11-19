@@ -1,4 +1,5 @@
 import contextlib
+import importlib.util
 import json
 import tempfile
 import threading
@@ -60,6 +61,73 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(job["stages"]["images"]["state"], "done")
             self.assertEqual(job["progress"], "картинки 4/4")
 
+    def test_progress_view_is_computed_from_stages(self):
+        from factory.store import progress_view
+        job = {"status": "running", "animate": "none", "stages": {
+            "script": {"state": "done"}, "voice": {"state": "running", "completed": 1, "total": 2},
+            "render": {"state": "running", "completed": 50, "total": 100}}}
+        view = progress_view(job)
+        self.assertEqual(view["percent"], 8 + 6 + 25 + 12)
+        self.assertEqual(view["stage"], "Монтаж видео")
+        self.assertEqual(progress_view({"status": "done"})["percent"], 100)
+        self.assertEqual(progress_view({"status": "queued"}), {"percent": 0, "stage": "В очереди"})
+
+    def test_render_percent_message_updates_stage(self):
+        from factory.store import JobStore
+        with tempfile.TemporaryDirectory() as directory:
+            store = JobStore(Path(directory))
+            store.put({"id": "test", "topic": "test", "status": "running", "created": "2026-01-01"})
+            store.progress("test", "монтаж 40%")
+            self.assertEqual(store.get("test")["stages"]["render"], {"state": "running", "completed": 40, "total": 100})
+
+    def test_unpaid_cancellation_is_trashed_and_paid_one_is_kept(self):
+        from factory.store import JobStore
+        with tempfile.TemporaryDirectory() as directory:
+            store = JobStore(Path(directory))
+            base = {"topic": "test", "status": "queued", "created": "2026-01-01"}
+            store.put({**base, "id": "free"})
+            self.assertTrue(store.cancel("free")["deleted_at"])
+            store.put({**base, "id": "paid", "status": "cancelled", "accounting": "confirmed", "cost": {"total": 0.05}})
+            store.put({**base, "id": "pending", "status": "cancelled", "accounting": "pending"})
+            store.put({**base, "id": "kept", "status": "cancelled", "kept": True})
+            self.assertFalse(store.discard_unpaid("paid"))
+            self.assertFalse(store.discard_unpaid("kept"))
+            self.assertTrue(store.discard_unpaid("pending"))
+            self.assertTrue(store.get("pending")["auto_deleted"])
+            store.patch("pending", cost={"total": 0.02})  # провайдер показал списание позже
+            self.assertTrue(store.discard_unpaid("pending"))
+            self.assertIsNone(store.get("pending")["deleted_at"])
+
+    def test_assistant_caches_answers_and_enforces_daily_limit(self):
+        from factory.assistant import Assistant, QuotaExceeded
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("factory.assistant.key", return_value="sk_test"),
+            patch("factory.assistant.env", return_value="2"),
+            patch("factory.assistant.writer.topics", return_value=["Тема"]) as topics,
+        ):
+            helper = Assistant(Path(directory))
+            params = {"query": "кофе", "lang": "ru"}
+            self.assertEqual(helper.ask("topics", params), ({"topics": ["Тема"]}, False))
+            self.assertEqual(helper.ask("topics", params), ({"topics": ["Тема"]}, True))
+            self.assertEqual(topics.call_count, 1)
+            self.assertEqual(helper.left(), 1)
+            helper.ask("topics", {"query": "чай", "lang": "ru"})
+            with self.assertRaises(QuotaExceeded):
+                helper.ask("topics", {"query": "сок", "lang": "ru"})
+
+    def test_customer_script_reaches_the_writer_prompt(self):
+        from factory import writer
+        prompts = []
+
+        def ask(prompt, timeout=400):
+            prompts.append(prompt)
+            return {"title": "T", "scenes": [{"text": "фраза"}] * 10}
+
+        with patch("factory.writer._ask", side_effect=ask):
+            writer.write("Тема", 1, "hero", script="Мой {особый} текст")
+        self.assertIn("Мой {особый} текст", prompts[0])
+
     def test_review_does_not_generate_images_or_video(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "job"
@@ -117,6 +185,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn("PlayResY: 1920", content)
             self.assertIn(r"\pos(", content)
 
+    @unittest.skipUnless(importlib.util.find_spec("numpy"), "нужен numpy из requirements-align.txt")
     def test_local_word_alignment_uses_original_text(self):
         scenes = [{"text": "Первый блок текста", "speech_start": 1, "speech_end": 4}]
         response = {

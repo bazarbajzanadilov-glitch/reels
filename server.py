@@ -27,6 +27,7 @@ from urllib.parse import parse_qs, urlparse, quote
 
 
 from factory import cost, subtitles, editing, alignment
+from factory.assistant import Assistant, QuotaExceeded
 from factory.config import (
     API,
     AUDIENCES,
@@ -45,12 +46,15 @@ from factory.config import (
 from factory.http import request
 from factory.files import atomic_bytes, jpeg_bytes, fingerprint
 from factory.limits import BoundedHTTPServer, RateLimiter
-from factory.store import JobStore, QueueFull
+from factory.store import JobStore, QueueFull, progress_view
 from factory.validation import (
     InvalidRequest,
     PayloadTooLarge,
     MAX_BODY,
+    choice,
     job_options,
+    number,
+    text,
     reference_image,
     estimate_options,
 )
@@ -72,6 +76,12 @@ FILES = {
     "cover-vertical.jpg": "image/jpeg",
     "cover-youtube.jpg": "image/jpeg",
     "cover-square.jpg": "image/jpeg",
+}
+STATIC_TYPES = {
+    "css": "text/css; charset=utf-8",
+    "js": "text/javascript; charset=utf-8",
+    "json": "application/json; charset=utf-8",
+    "webp": "image/webp",
 }
 MAX_QUEUE = 20
 RATE = RateLimiter()
@@ -218,7 +228,9 @@ class Handler(BaseHTTPRequestHandler):
                     return True
             except Exception:
                 pass
-        if self._limited("auth-fail", 10):
+        # Браузер сначала запрашивает каждый файл без пароля — это не попытка подбора.
+        # Считаем только неверные пароли, иначе сама страница упиралась в лимит и не загружалась.
+        if h and self._limited("auth-fail", 10):
             return False
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Basic realm="Shorts Factory"')
@@ -274,26 +286,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": "Запрос с другого сайта запрещён"}, 403)
         u = urlparse(self.path)
         parts = u.path.strip("/").split("/")
-        static_files = {
-            "/": ("index.html", "text/html; charset=utf-8"),
-            "/index.html": ("index.html", "text/html; charset=utf-8"),
-            "/app.css": ("css/app.css", "text/css; charset=utf-8"),
-            "/app.js": ("js/app.js", "text/javascript; charset=utf-8"),
-            **{
-                f"/js/{name}.js": (f"js/{name}.js", "text/javascript; charset=utf-8")
-                for name in (
-                    "app",
-                    "subtitle-controls",
-                    "job-editor",
-                    "preferences",
-                    "progress",
-                    "bootstrap",
-                )
-            },
-        }
-        if u.path in static_files:
-            name, ctype = static_files[u.path]
-            self._file(ROOT / "web" / name, ctype)
+        asset = re.fullmatch(r"/((?:css|js|data|img(?:/styles)?)/[\w-]+\.(css|js|json|webp))", u.path)
+        if u.path in ("/", "/index.html"):
+            self._file(ROOT / "web" / "index.html", "text/html; charset=utf-8")
+        elif asset:
+            # Статика только из этих папок и с этими расширениями; картинки и темы кэшируются на неделю.
+            name, ext = asset.groups()
+            self._file(ROOT / "web" / name, STATIC_TYPES[ext], "public, max-age=604800" if ext in ("webp", "json") else "private, no-cache")
         elif u.path == "/api/estimate":
             self._json(cost.estimate(**estimate_options(parse_qs(u.query))))
         elif u.path == "/api/events":
@@ -303,15 +302,19 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             if self.command == "HEAD":
                 return
-            previous = None
-            deadline = time.monotonic() + 30
+            # Одно долгое соединение вместо переподключения каждые 30 с; база опрашивается раз в секунду.
+            # Пинг раз в 15 с освобождает поток, если вкладку закрыли.
+            previous, ping = None, 0
+            deadline = time.monotonic() + 600
             while time.monotonic() < deadline:
                 current = jobs_store().revision()
-                if current != previous:
-                    self.wfile.write(f"data: {current}\n\n".encode())
+                ping += 1
+                if current != previous or ping >= 15:
+                    message = f"data: {current}\n\n" if current != previous else ": ping\n\n"
+                    self.wfile.write(message.encode())
                     self.wfile.flush()
-                    previous = current
-                time.sleep(0.5)
+                    previous, ping = current, 0
+                time.sleep(1)
             return
         elif re.fullmatch(r"/api/jobs/[\w-]+/script", u.path):
             jid = u.path.split("/")[3]
@@ -327,6 +330,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(
                 {
                     "word_timing": alignment.available(),
+                    "assistant_left": Assistant(JOBS / ".assistant").left(),
                     "langs": {k: v["label"] for k, v in LANGS.items()},
                     "voices": {
                         k: {
@@ -377,6 +381,7 @@ class Handler(BaseHTTPRequestHandler):
                 [
                     {k: v for k, v in j.items() if k != "log"}
                     | {"log": j.get("log", [])[-6:]}
+                    | progress_view(j)
                     for j in all_jobs()
                 ]
             )
@@ -533,8 +538,10 @@ class Handler(BaseHTTPRequestHandler):
             directory = JOBS / jid
 
             def transform(job):
-                if action in ("trash", "restore"):
-                    return {"deleted_at": time.time() if action == "trash" else None}
+                if action == "trash":
+                    return {"deleted_at": time.time()}
+                if action == "restore":
+                    return {"deleted_at": None, "auto_deleted": False, "kept": True}
                 if action in ("script", "render"):
                     saved = editing.save_script(directory, data)
                     return {"title": saved["title"]}
@@ -544,6 +551,29 @@ class Handler(BaseHTTPRequestHandler):
                     jid, transform, action if action == "render" else None
                 )
             )
+        if self.path in ("/api/assistant/topics", "/api/assistant/script"):
+            if self._limited("assistant", 12):
+                return
+            data = self._read_json(8192)
+            lang = choice(data.get("lang"), LANGS, "ru", "язык")
+            helper = Assistant(JOBS / ".assistant")
+            try:
+                if self.path.endswith("/topics"):
+                    params = {"query": text(data.get("query", ""), "Запрос", 300, True), "lang": lang}
+                    result, cached = helper.ask("topics", params)
+                else:
+                    params = {
+                        "topic": text(data.get("topic", ""), "Тема", 200, True),
+                        "minutes": number(data.get("minutes"), "Длительность", 0.5, 15, default=1),
+                        "lang": lang,
+                    }
+                    result, cached = helper.ask("script", params, fresh=data.get("fresh") is True)
+            except QuotaExceeded as error:
+                return self._json({"error": str(error), "left": 0}, 429)
+            except RuntimeError:
+                LOG.exception("Assistant request failed")
+                return self._json({"error": "ИИ-помощник сейчас недоступен. Повторите через минуту", "left": helper.left()}, 502)
+            return self._json({**result, "cached": cached, "left": helper.left()})
         if self.path == "/api/subtitles/preview":
             if self._limited("preview", 180):
                 return

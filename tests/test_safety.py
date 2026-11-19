@@ -121,8 +121,10 @@ class AccessTests(unittest.TestCase):
 
     def test_assets_work_without_auth_on_loopback(self):
         with patch("server.env", return_value=None):
-            for path in ("/", "/app.css", "/app.js"):
+            for path in ("/", "/css/app.css", "/js/app.js"):
                 self.assertEqual(self.request(path=path)[0], 200)
+            for path in ("/css/../server.py", "/js/missing.js", "/img/x.png"):
+                self.assertEqual(self.request(path=path)[0], 404)
 
     def test_dns_rebinding_blocked(self):
         with patch("server.env", return_value=None):

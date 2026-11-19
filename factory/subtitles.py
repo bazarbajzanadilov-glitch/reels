@@ -4,8 +4,9 @@ import math
 import re
 from pathlib import Path
 
-from PIL import Image, ImageColor, ImageDraw
+from PIL import Image, ImageColor, ImageDraw, ImageOps
 
+from .config import ROOT
 from .graphics import font
 
 DEFAULTS = {
@@ -284,18 +285,17 @@ def preview(value=None, fmt="vertical", page=0, width=None) -> Image.Image:
         _number(width, 640 if horizontal else 360, 180, 1920 if horizontal else 1080)
     )
     size = (target_width, round(target_width * (9 / 16 if horizontal else 16 / 9)))
-    image = Image.new("RGB", size)
-    draw = ImageDraw.Draw(image)
-    # Light and dark areas make contrast visible with any chosen text color.
-    for y in range(size[1]):
-        light = round(235 - 180 * y / size[1])
-        draw.line(
-            (0, y, size[0] // 2, y),
-            fill=(light, max(0, light - 12), max(0, light - 20)),
-        )
-        draw.line(
-            (size[0] // 2, y, size[0], y), fill=(24, 32 + round(45 * y / size[1]), 52)
-        )
+    # Настоящий кадр под субтитрами (web/img, создаётся manage.py assets); без него — нейтральный градиент.
+    backdrop = ROOT / "web" / "img" / f"subtitle-{'horizontal' if horizontal else 'vertical'}.webp"
+    if backdrop.is_file():
+        with Image.open(backdrop) as frame:
+            image = ImageOps.fit(frame.convert("RGB"), size, Image.Resampling.LANCZOS)
+    else:
+        image = Image.new("RGB", size)
+        draw = ImageDraw.Draw(image)
+        for y in range(size[1]):
+            shade = round(30 + 40 * y / size[1])
+            draw.line((0, y, size[0], y), fill=(shade, shade + 6, shade + 30))
     scene = {
         "start": 0,
         "dur": 12,

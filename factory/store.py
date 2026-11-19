@@ -14,6 +14,55 @@ from .files import atomic_json, atomic_bytes, path_lock
 
 LOG = logging.getLogger(__name__)
 ACTIVE = ("queued", "running", "cancelling")
+# Доля этапа в общей готовности ролика; сумма — 100.
+STAGE_WEIGHTS = {"script": 8, "voice": 12, "images": 20, "animation": 25, "render": 25, "cover": 7, "texts": 3}
+STAGE_LABELS = {
+    "script": "Пишем сценарий",
+    "voice": "Озвучка",
+    "images": "Рисуем кадры",
+    "animation": "Анимация сцен",
+    "render": "Монтаж видео",
+    "cover": "Обложка",
+    "texts": "Тексты для публикации",
+}
+
+
+def progress_view(job):
+    """Процент и текущий этап считаются на сервере: одинаковы в карточке, в окне и после перезагрузки."""
+    status = job.get("status")
+    if status == "done":
+        return {"percent": 100, "stage": "Готово"}
+    if status == "queued":
+        return {"percent": 0, "stage": "В очереди"}
+    stages = job.get("stages") or {}
+    percent, stage = 0.0, None
+    for key, weight in STAGE_WEIGHTS.items():
+        value = stages.get(key) or {}
+        if value.get("state") in ("done", "skipped") or (key == "animation" and job.get("animate") == "none"):
+            percent += weight
+        elif value.get("total"):
+            percent += weight * min(1, value["completed"] / value["total"])
+        if value.get("state") == "running":
+            count = f" {value['completed']}/{value['total']}" if value.get("total") and key != "render" else ""
+            stage = STAGE_LABELS[key] + count
+    if status == "cancelling":
+        stage = "Останавливается"
+    return {"percent": min(99, int(percent)), "stage": stage or "Подготовка"}
+
+
+NEGLIGIBLE = 0.005  # меньше полцента клиент видит как $0.00
+
+
+def unpaid_cancellation(job):
+    """Остановленный ролик без списаний ($0.00) — пустая карточка. Убирается сразу; если провайдер
+    позже покажет расход, сверка вернёт ролик из корзины (discard_unpaid). Ролик, который
+    клиент сам восстановил из корзины (kept), больше не трогаем."""
+    return (
+        job.get("status") == "cancelled"
+        and not job.get("deleted_at")
+        and not job.get("kept")
+        and (job.get("cost") or {}).get("total", 0) < NEGLIGIBLE
+    )
 
 
 class QueueFull(ValueError):
@@ -225,6 +274,9 @@ class JobStore:
                     stage = {"озвучка": "voice", "картинки": "images", "анимация": "animation"}[match.group(1)]
                     done, total = int(match.group(2)), int(match.group(3))
                     stages[stage] = {"state": "done" if done >= total else "running", "completed": done, "total": total}
+                match = re.match(r"монтаж (\d+)%", str(message))
+                if match:
+                    stages["render"] = {"state": "running", "completed": min(100, int(match.group(1))), "total": 100}
             if str(message).startswith("этап:"):
                 job["progress"] = job.get("log", ["в работе"])[-1] if job.get("log") else "в работе"
             else:
@@ -428,6 +480,8 @@ class JobStore:
                 status="cancelled" if job["status"] == "queued" else "cancelling",
                 progress="остановка",
             )
+            if unpaid_cancellation(job):
+                job.update(deleted_at=time.time(), auto_deleted=True)
             db.execute(
                 "UPDATE jobs SET payload=?,status=?,updated=? WHERE id=?",
                 (json.dumps(job, ensure_ascii=False), job["status"], time.time(), jid),
@@ -461,6 +515,28 @@ class JobStore:
             )
         self._mirror(job)
         return job
+
+    def discard_unpaid(self, jid):
+        """Синхронизирует корзину с расходами остановленного ролика: без списаний — убрать,
+        если списание всё же нашлось — вернуть автоматически убранный ролик."""
+        with self.connection() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT payload FROM jobs WHERE id=?", (jid,)).fetchone()
+            if row is None:
+                return False
+            job = json.loads(row["payload"])
+            if unpaid_cancellation(job):
+                job.update(deleted_at=time.time(), auto_deleted=True)
+            elif job.get("auto_deleted") and (job.get("cost") or {}).get("total", 0) >= NEGLIGIBLE:
+                job.update(deleted_at=None, auto_deleted=False)
+            else:
+                return False
+            db.execute(
+                "UPDATE jobs SET payload=?,updated=? WHERE id=?",
+                (json.dumps(job, ensure_ascii=False), time.time(), jid),
+            )
+        self._mirror(job)
+        return True
 
     def revision(self):
         with self.connection() as db:

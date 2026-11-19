@@ -1,0 +1,73 @@
+/* Reels Studio — дизайн-токены. Остальные стили используют только эти переменные:
+   радиусы, высоты, отступы, шрифты и скорости анимаций не задаются «сырыми» пикселями. */
+:root {
+  color-scheme: dark;
+
+  /* Цвет */
+  --bg: #0b0e1e;
+  --surface: #141936;
+  --surface-2: #1c2247;
+  --surface-3: #252d5b;
+  --line: #2b3363;
+  --line-2: #3f4a86;
+  --text: #f1f3ff;
+  --muted: #a8aed6;
+  --faint: #767db0;
+  --accent: #f5b414;
+  --accent-hover: #ffcb45;
+  --accent-ink: #1b1400;
+  --accent-soft: rgba(245, 180, 20, .12);
+  --accent-line: rgba(245, 180, 20, .45);
+  --grad: linear-gradient(180deg, #ffcd45, #f0a400);
+  --ok: #46d98e;
+  --ok-soft: rgba(70, 217, 142, .14);
+  --warn: #f0b45a;
+  --danger: #ff6b76;
+  --danger-soft: rgba(255, 107, 118, .12);
+  --scrim: rgba(5, 7, 18, .82);
+  --shadow: 0 18px 40px -28px rgba(0, 0, 0, .95);
+  --glow: 0 10px 26px -14px rgba(245, 180, 20, .75);
+  --focus: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent);
+
+  /* Скругления по ролям */
+  --r-sm: 8px;     /* бейджи, превью внутри карточек */
+  --r-md: 12px;    /* кнопки, поля, карточки выбора */
+  --r-lg: 16px;    /* панели и окна */
+  --r-pill: 999px; /* чипсы, свотчи, значения слайдеров */
+
+  /* Высоты контролов */
+  --h-sm: 36px;
+  --h-md: 44px;
+  --h-lg: 52px;
+
+  /* Отступы, шаг 4 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --pad-sm: 14px;
+  --pad-md: 18px;
+  --pad-lg: 24px;
+
+  /* Шрифт */
+  --font: -apple-system, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  --t-xs: 12px;
+  --t-sm: 13px;
+  --t-md: 15px;
+  --t-lg: 17px;
+  --t-xl: 20px;
+  --t-2xl: 24px;
+  --t-3xl: 32px;
+  --t-display: 54px; /* только процент сборки */
+
+  /* Движение */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}

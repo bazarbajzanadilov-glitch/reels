@@ -34,6 +34,7 @@ RULES = """Ты сценарист вирусных роликов.
 - Аудитория: {audience}
 - Финал: {ending}
 - Пожелания заказчика (важнее всего остального, если противоречат — следуй им): {notes}
+- Готовый текст заказчика: {script}
 
 ЯЗЫК РОЛИКА: {lang}. На этом языке пиши "text", "caption", подписи "hud.label", обложку и все тексты для соцсетей.
 Поля "image" и "motion" — всегда на английском.
@@ -112,13 +113,26 @@ PART = (
 )
 
 
-def _ask(prompt: str) -> dict:
+TOPICS = """Ты продюсер вирусных роликов для TikTok, YouTube Shorts и Instagram Reels.
+Запрос автора: «{query}».
+Предложи {count} разных тем для роликов по этому запросу: конкретных, интригующих, с сильным крючком.
+Язык тем: {lang}. Каждая тема — до 90 символов, без нумерации и кавычек.
+Ответь ТОЛЬКО JSON: {{"topics": ["тема"]}}"""
+
+DRAFT = """Ты сценарист вирусных роликов. Напиши текст озвучки ролика на тему «{topic}».
+Длина: {minutes} мин — ровно {n} коротких абзацев, по одному на сцену, в каждом 1–2 предложения (80–110 символов).
+Язык: {lang}. Первая фраза — сильный крючок, история развивается без повторов, в конце — вопрос зрителю.
+Пиши только то, что произносит диктор: без ремарок, номеров сцен и описаний кадров.
+Ответь ТОЛЬКО JSON: {{"title": "короткое название", "paragraphs": ["абзац"]}}"""
+
+
+def _ask(prompt: str, timeout: int = 400) -> dict:
     payload = {
         "model": TEXT_MODEL,
         "response_format": {"type": "json_object"},
         "messages": [{"role": "user", "content": prompt}],
     }
-    raw = json.loads(post_json(f"{API}/v1/chat/completions", payload, timeout=400))
+    raw = json.loads(post_json(f"{API}/v1/chat/completions", payload, timeout=timeout))
     return json.loads(raw["choices"][0]["message"]["content"])
 
 
@@ -152,6 +166,10 @@ HUD_ON = (
     "меняется или появляется новый индикатор; null — убрать. Если не уместен — не указывай вовсе."
 )
 HUD_OFF = 'не используй (не указывай поле "hud" вообще).'
+SCRIPT_RULE = (
+    "это и есть озвучка ролика. Разбей его на сцены по порядку и используй формулировки заказчика в \"text\" "
+    "почти дословно (можно только сократить фразу до 1–2 предложений), не добавляй новых событий.\n<<<\n{}\n>>>"
+)
 
 
 def write(
@@ -167,6 +185,7 @@ def write(
     audience: str = "all",
     notes: str = "",
     checkpoint_dir: Path | None = None,
+    script: str = "",
 ) -> dict:
     n = max(6, round(minutes * 60 / SECONDS_PER_SCENE))
     g = GENRES.get(genre, GENRES["auto"])
@@ -183,6 +202,7 @@ def write(
         "ending": ENDINGS.get(ending, ENDINGS["auto"])["text"],
         "audience": AUDIENCES.get(audience, AUDIENCES["all"])["text"],
         "notes": notes.strip() or "нет",
+        "script": SCRIPT_RULE.format(script.strip()) if script.strip() else "нет — придумай текст сам",
     }
 
     def cached(name, fn):
@@ -244,6 +264,37 @@ def write(
             data["scenes"] = [s for chunk in ex.map(part, ranges) for s in chunk]
     data["lang"] = lang
     return data
+
+
+def topics(query: str, lang: str = "ru", count: int = 8) -> list[str]:
+    """Темы для ИИ-помощника; тот же запрос с count=100 наполняет библиотеку тем (manage.py topics)."""
+
+    def once():
+        d = _ask(TOPICS.format(query=query, count=count, lang=LANGS[lang]["name"]), timeout=300)
+        found = []
+        for item in d.get("topics", []):
+            value = " ".join(str(item).split()).strip(" «»\"'")[:200]
+            if value and value not in found:
+                found.append(value)
+        if not found:
+            raise ValueError("пустой список тем")
+        return found[:count]
+
+    return _retry(once, "темы")
+
+
+def draft(topic: str, minutes: float, lang: str = "ru") -> dict:
+    """Черновик озвучки по выбранной теме; клиент правит его до запуска сборки."""
+    n = max(6, round(minutes * 60 / SECONDS_PER_SCENE))
+
+    def once():
+        d = _ask(DRAFT.format(topic=topic, minutes=minutes, n=n, lang=LANGS[lang]["name"]), timeout=180)
+        paragraphs = [" ".join(str(p).split()) for p in d.get("paragraphs", []) if str(p).strip()]
+        if len(paragraphs) < n * 0.7:
+            raise ValueError(f"мало абзацев: {len(paragraphs)} из {n}")
+        return {"title": str(d.get("title") or topic).strip()[:200], "script": "\n\n".join(paragraphs)}
+
+    return _retry(once, "сценарий")
 
 
 def social(data: dict) -> dict:

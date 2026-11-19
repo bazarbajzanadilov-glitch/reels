@@ -169,6 +169,58 @@ def restore_cache(batch: Path, cache: Path = CACHE):
     return len(data["files"])
 
 
+NICHES = [
+    "Что если…", "Страшные истории", "Космос", "Выживание", "Тайны истории", "Психология",
+    "Мотивация", "Загадки природы", "Технологии будущего", "Городские легенды", "Животные",
+    "Невероятные совпадения", "Детективы", "Мифы и легенды", "Наука простыми словами",
+    "Путешествия", "Лайфхаки", "Истории успеха", "Неразгаданные тайны", "Сказки для взрослых",
+]
+STYLE_SCENE = "the hero stands on a hill at sunset looking at a small town below, wide shot"
+SUBTITLE_SCENE = "the hero walks through a quiet evening street with warm lights, medium shot"
+
+
+def topic_library(path: Path = ROOT / "web" / "data" / "topics.json", count=100):
+    """Разовая платная генерация библиотеки тем; дальше помощник листает её бесплатно."""
+    from factory import writer
+    from factory.config import key
+    from factory.http import generation_key
+
+    library = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    angles = ["", " — неочевидные и спорные", " — личные истории и случаи", " — короткие факты и вопросы"]
+    with generation_key(key()):
+        for niche in NICHES:
+            topics = library.get(niche, [])
+            for angle in angles:  # по 50: длинный список модель иногда обрывает или зацикливает
+                if len(topics) >= count:
+                    break
+                topics += [t for t in writer.topics(f"Темы для ниши «{niche}»{angle}", "ru", 50) if t not in topics]
+                library[niche] = topics[:count]
+                atomic_json(path, library)
+    return {niche: len(items) for niche, items in library.items()}
+
+
+def visual_assets(root: Path = ROOT / "web" / "img"):
+    """Разовая генерация превью стилей и подложек превью субтитров (~$0.04)."""
+    from PIL import Image
+    from factory import images
+    from factory.config import CHARACTER, STYLE, STYLES, STYLE_TAIL, key
+    from factory.http import generation_key
+
+    jobs = [(f"styles/{name}.webp", STYLES[name]["prompt"] + STYLE_TAIL, STYLE_SCENE, (512, 640), (320, 400))
+            for name in STYLES if name != "custom"]
+    jobs += [("subtitle-vertical.webp", STYLE, SUBTITLE_SCENE, (768, 1344), (540, 960)),
+             ("subtitle-horizontal.webp", STYLE, SUBTITLE_SCENE, (1344, 768), (960, 540))]
+    with generation_key(key()):
+        for name, style, scene, size, final in jobs:
+            target = root / name
+            if target.is_file():
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with Image.open(images.fetch(scene, style, CHARACTER, 7, size)) as image:
+                image.convert("RGB").resize(final, Image.LANCZOS).save(target, "WEBP", quality=82)
+    return sorted(str(p.relative_to(root)) for p in root.rglob("*.webp"))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
@@ -188,6 +240,8 @@ if __name__ == "__main__":
     p.add_argument("--apply", action="store_true")
     p = commands.add_parser("restore-cache")
     p.add_argument("batch", type=Path)
+    commands.add_parser("topics")
+    commands.add_parser("assets")
     args = parser.parse_args()
     if args.command == "backup":
         print(json.dumps({"files": backup(args.output), "archive": str(args.output)}))
@@ -197,3 +251,7 @@ if __name__ == "__main__":
         print(json.dumps(cleanup(days=max(1, args.days), apply=args.apply)))
     elif args.command == "restore-cache":
         print(json.dumps({"files": restore_cache(args.batch)}))
+    elif args.command == "topics":
+        print(json.dumps(topic_library(), ensure_ascii=False))
+    elif args.command == "assets":
+        print(json.dumps(visual_assets()))

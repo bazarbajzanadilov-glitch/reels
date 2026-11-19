@@ -11,6 +11,19 @@ from .config import VIDEO_DEFAULT, CHARACTER, STYLE, STYLE_TAIL, STYLES, TONES
 from .cover import PRICE as COVER_PRICE, make_cover
 from .files import atomic_json, fingerprint, valid_image, valid_video
 
+# Комплект для публикации всегда входит в ролик: обложка в трёх форматах и тексты для соцсетей.
+PACKAGE_FILES = [
+    "cover.jpg",
+    "youtube.txt",
+    "instagram.txt",
+    "tiktok.txt",
+    "facebook.txt",
+    "all-texts.txt",
+    "cover-vertical.jpg",
+    "cover-youtube.jpg",
+    "cover-square.jpg",
+]
+
 
 def run(
     topic: str,
@@ -40,6 +53,7 @@ def run(
     prior_spent: float = 0.0,
     subtitles: dict | None = None,
     script_only: bool = False,
+    script: str = "",
 ) -> dict:
     if subtitle_tools.normalize(subtitles).get("timing") == "words":
         from .alignment import model
@@ -68,9 +82,9 @@ def run(
         out_dir.mkdir(parents=True, exist_ok=True)
 
         log("этап:script:running")
-        script = out_dir / "script.json"
-        if script.exists():  # повтор после ошибки: сценарий уже есть, голос/картинки/клипы возьмутся из кэша
-            data = json.loads(script.read_text(encoding="utf-8"))
+        script_path = out_dir / "script.json"
+        if script_path.exists():  # повтор после ошибки: сценарий уже есть, голос/картинки/клипы возьмутся из кэша
+            data = json.loads(script_path.read_text(encoding="utf-8"))
             log(f"повтор: беру готовый сценарий «{data.get('title', topic)}»")
         else:
             look = {}
@@ -110,17 +124,18 @@ def run(
                 audience,
                 notes,
                 checkpoint_dir=out_dir / ".stages",
+                script=script,
             )
             data.update(look)
             data.update(voice_provider=voice_provider, voice=voice, voice_speed=voice_speed,
                         channel_name=channel_name.strip(), style_key=style)
-            atomic_json(script, data)
+            atomic_json(script_path, data)
             log(
                 f"сценарий готов: «{data.get('title', topic)}», {len(data['scenes'])} сцен"
             )
         data["video_model"] = video_model
         data["subtitles"] = subtitle_tools.normalize(subtitles)
-        atomic_json(script, data)
+        atomic_json(script_path, data)
         log("этап:script:done")
 
         if script_only:
@@ -140,7 +155,7 @@ def run(
                 ),
             ),
         )
-        atomic_json(script, data)
+        atomic_json(script_path, data)
 
         check_cancelled()
         st = data.get("style", STYLE) + (
@@ -241,18 +256,7 @@ def run(
                 out_dir / name, "JPEG", quality=92, optimize=True)
 
         log("архив")
-        files = [
-            "video.mp4",
-            "cover.jpg",
-            "youtube.txt",
-            "instagram.txt",
-            "tiktok.txt",
-            "facebook.txt",
-            "all-texts.txt",
-            "cover-vertical.jpg",
-            "cover-youtube.jpg",
-            "cover-square.jpg",
-        ]
+        files = ["video.mp4", *PACKAGE_FILES]
         if data["subtitles"]["mode"] != "off" and (out_dir / "subtitles.srt").is_file():
             files.append("subtitles.srt")
             if (out_dir / "subtitles.ass").is_file():
@@ -284,19 +288,7 @@ def remount(directory: Path, fmt: str, animate: str, log=print):
             log,
             clip_limit=data.get("clip_limit", 0),
         )
-    files = [
-        "video.mp4",
-        "cover.jpg",
-        "youtube.txt",
-        "instagram.txt",
-        "tiktok.txt",
-        "facebook.txt",
-        "all-texts.txt",
-        "cover-vertical.jpg",
-        "cover-youtube.jpg",
-        "cover-square.jpg",
-    ]
-    files = [name for name in files if (directory / name).is_file()]
+    files = [name for name in ["video.mp4", *PACKAGE_FILES] if (directory / name).is_file()]
     files += [
         name
         for name in ("subtitles.srt", "subtitles.ass")

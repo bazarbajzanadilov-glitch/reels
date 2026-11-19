@@ -22,6 +22,7 @@ from .config import (
 MAX_BODY = 6 * 1024 * 1024
 MAX_IMAGE = 4 * 1024 * 1024
 MAX_PIXELS = 20_000_000
+MAX_SCRIPT = 20_000
 
 
 class InvalidRequest(ValueError):
@@ -114,6 +115,7 @@ def job_options(data):
     return {
         "review": data.get("review") is True,
         "topic": text(data.get("topic", ""), "Тема", 200, True),
+        "script": text(data.get("script", ""), "Готовый сценарий", MAX_SCRIPT),
         "format": choice(
             data.get("format"), ("vertical", "horizontal"), "vertical", "формат"
         ),

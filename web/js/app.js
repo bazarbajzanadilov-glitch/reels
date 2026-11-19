@@ -2,27 +2,22 @@
 
 /*
  * Vanilla-контроллер студии.
- * Состояние живёт в DOM и модульных переменных (OPT, jobs, cur, refData).
+ * Состояние живёт в DOM и модульных переменных (OPT, jobs, refData).
  * При переносе на React это разбивается на: OptionsProvider, useEstimate,
- * useCreateJob, useHistory и JobDialog. Вспомогательные функции ниже
+ * useCreateJob, useHistory и KitDialog. Вспомогательные функции ниже
  * (esc, money, copyText) переиспользуются как утилиты.
  */
 const $ = s => document.querySelector(s);
 const val = n => (document.querySelector(`input[name=${n}]:checked`) || document.querySelector(`select[name=${n}]`))?.value;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money = x => "$" + Number(x || 0).toFixed(2);
-const dlg = $("#dlg");
+const ACTIVE = ["queued", "running", "cancelling"];
 
 let OPT = null;
 const mins = () => +$("#minutes").value;
-const LANG_META = {
-  ru: {flag: "🇷🇺", name: "Русский"},
-  kk: {flag: "🇰🇿", name: "Қазақша"},
-  en: {flag: "🇬🇧", name: "English"},
-  de: {flag: "🇩🇪", name: "Deutsch"},
-};
-const langName = code => LANG_META[code]?.name || "";
-const langOption = code => `${LANG_META[code]?.flag || ""} ${LANG_META[code]?.name || code}`.trim();
+// Флаги — SVG из спрайта (#flag-ru …): эмодзи-флаги Windows показывает буквами.
+const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
+const langName = code => LANG_NAMES[code] || code;
 
 const copyText = async text => {
   try { await navigator.clipboard.writeText(text); return true; }
@@ -33,6 +28,7 @@ function setMins(m) {
   m = Math.min(15, Math.max(1, Math.round(+m || 1)));
   $("#minutes").value = m;
   $("#minutes-range").value = m;
+  refreshSliders();
   if (OPT) estimate();
 }
 // выпадающий список: [значение, подпись]
@@ -41,24 +37,38 @@ const opts = (id, entries, checked) => { const el = $(id);
   el.value = checked; };
 const labelOf = x => typeof x === "string" ? x : x?.label || "";
 
+// Голоса — сетка карточек; скрытый <select id=voice> хранит выбор для формы и настроек.
+const voiceTitle = v => v[0].toUpperCase() + v.slice(1);
 function voices() {
   const p = OPT.voices[val("provider")], list = p[val("gender")];
   const current = $("#voice").value;
-  $("#voice").innerHTML = list.map(v => `<option value="${esc(v)}">${esc(v[0].toUpperCase() + v.slice(1))}</option>`).join("");
+  $("#voice").innerHTML = list.map(v => `<option value="${esc(v)}">${esc(voiceTitle(v))}</option>`).join("");
   $("#voice").value = list.includes(current) ? current : list.includes(p.default) ? p.default : list[0];
+  const gender = val("gender") === "female" ? "женский" : "мужской";
+  $("#voice-grid").innerHTML = list.map(v => `<button type="button" class="voice-card" data-voice="${esc(v)}" aria-pressed="${v === $("#voice").value}">
+    <span class="voice-play"><svg aria-hidden="true"><use href="#i-play"/></svg><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></span>
+    <span><b>${esc(voiceTitle(v))}</b><small>${gender}</small></span></button>`).join("");
 }
-// смена голоса = выбор + проба; ▶ — прослушать ещё раз / остановить
-$("#voice").onchange = () => { summary(); playVoice($("#voice").value, $("#voice-play"), true); };
-$("#voice-play").onclick = () => playVoice($("#voice").value, $("#voice-play"));
+// Клик по карточке = выбор + проба; повторный клик по выбранной — остановить или прослушать снова.
+$("#voice-grid").onclick = e => {
+  const card = e.target.closest("[data-voice]");
+  if (!card) return;
+  if ($("#voice").value === card.dataset.voice) return playVoice(card.dataset.voice, card);
+  $("#voice").value = card.dataset.voice;
+  $("#voice-grid").querySelectorAll("[data-voice]").forEach(b => b.setAttribute("aria-pressed", String(b === card)));
+  $("#voice").dispatchEvent(new Event("change", {bubbles: true}));
+  summary();
+  playVoice(card.dataset.voice, card, true);
+};
 
 async function init() {
   OPT = await fetch("/api/options").then(r => r.json());
   if (OPT.word_timing) { $("#subtitle-word-option").disabled = false; $("#subtitle-word-option").textContent = "По словам"; }
-  opts("#langs", Object.keys(OPT.langs).map(k => [k, langOption(k)]), "ru");
+  opts("#langs", Object.keys(OPT.langs).map(k => [k, langName(k)]), "ru");
   opts("#genres", Object.entries(OPT.genres).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#tones", Object.entries(OPT.tones).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#styles", Object.entries(OPT.styles).map(([k, l]) => [k, labelOf(l).replace(" мультфильм", "")]), "2d");
-  opts("#vmodels", Object.entries(OPT.video_models).map(([k, v]) => [k, `${v.label} · ${money(v.price)} за сцену`]), "pvideo");
+  opts("#vmodels", Object.entries(OPT.video_models).map(([k, v]) => [k, `${v.label}|${money(v.price)} за сцену`]), "pvideo");
   opts("#narrators", Object.entries(OPT.narrators).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#endings", Object.entries(OPT.endings).map(([k, l]) => [k, labelOf(l)]), "auto");
   opts("#audiences", Object.entries(OPT.audiences).map(([k, l]) => [k, labelOf(l)]), "all");
@@ -80,12 +90,15 @@ async function init() {
     if (["provider", "gender", "lang"].includes(i.name)) stopAudio();
     if (i.name === "provider" || i.name === "gender") voices();
     estimate(); }));
+  setupSliders();
+  setupSwatches();
   restorePreferences();
+  voices();
   setupChoiceButtons();
   setMins(mins());
   setupStudio();
   setupCustomChoices();
-  setupPreciseRanges();
+  updateSubtitleControls();
   $("#go").disabled = false;
   await estimate();
 }
@@ -118,7 +131,7 @@ async function estimate() {
     const r = await response.json();
     if (controller.signal.aborted) return;
     $("#est").textContent = "≈ " + money(r.total);
-    $("#price-big").textContent = "≈ " + money(r.total);
+    countTo($("#price-big"), r.total);
     $("#scene-summary").innerHTML = `<span><b>${r.scenes}</b>сцен</span><span><b>${r.clips || 0}</b>с анимацией</span>`;
     const parts = r.parts || {}, detail = {"картинки": `${r.scenes} кадров`, "анимация": `${r.clips || 0} сцен`, "голос": $("#voice").value};
     $("#plan").innerHTML = Object.entries(parts).map(([k, v]) =>
@@ -133,6 +146,18 @@ async function estimate() {
   }
 }
 
+// Цена плавно пересчитывается к новому значению.
+function countTo(node, target) {
+  const from = Number(node.dataset.value || target), start = performance.now(), slow = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  node.dataset.value = target;
+  const step = now => {
+    const k = slow ? 1 : Math.min(1, (now - start) / 320);
+    node.textContent = "≈ " + money(from + (target - from) * (1 - (1 - k) ** 3));
+    if (k < 1 && node.dataset.value == target) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 // сколько сцен оживить: по умолчанию 4 на минуту в пределах стандартного лимита, ползунком — любое число
 let clipsTouched = false;
 function showClips(r) {
@@ -141,7 +166,8 @@ function showClips(r) {
   field.max = Math.max(1, r.scenes);
   field.value = Math.max(1, want);
   $("#clips-range").max = field.max; $("#clips-range").value = field.value;
-  $("#clips-value").textContent = `из ${r.scenes}`;
+  $("#clips-value").textContent = r.scenes;
+  refreshSliders();
   $("#clips-reset").hidden = !clipsTouched;
   const max = +$("#maxprice").value;
   $("#maxprice").placeholder = "авто · " + r.budget.toFixed(2);
@@ -243,7 +269,7 @@ async function create() {
   if (val("style")==="custom" && !$("#custom-style").value.trim()) { $("#custom-style").focus(); return; }
   if (val("genre")==="custom" && !$("#custom-genre").value.trim()) { $("#custom-genre").focus(); return; }
   $("#go").disabled = true;
-  const body=JSON.stringify({topic, review:$("#review-script").checked, subtitles:subtitleSettings(), format:val("format"), minutes:+mins(), animate:val("animate"), reference:refData, scene_reference:sceneRefData, custom_style:$("#custom-style").value, custom_genre:$("#custom-genre").value,
+  const body=JSON.stringify({topic, script:$("#script").value, review:$("#review-script").checked, subtitles:subtitleSettings(), format:val("format"), minutes:+mins(), animate:val("animate"), reference:refData, scene_reference:sceneRefData, custom_style:$("#custom-style").value, custom_genre:$("#custom-genre").value,
       exact: !!refData && val("exact") === "1", lang:val("lang"), style:val("style"), genre:val("genre"), tone:val("tone"), narrator:val("narrator"), ending:val("ending"),
       audience:val("audience"), notes:$("#notes").value, video_model:val("vmodel"), max_price:+$("#maxprice").value || null, clips:clipsTouched && val("animate") !== "none" ? +$("#clips").value : null, voice_provider:val("provider"), voice:$("#voice").value,
       voice_speed:+$("#voice-speed").value, channel_name:$("#channel-name").value});
@@ -258,37 +284,35 @@ async function create() {
   if (r.error) { $("#err").textContent = r.error; $("#err").scrollIntoView({block:"center",behavior:"smooth"}); return; }
   creationKey.pending=null;
   try { sessionStorage.removeItem("factory.pending"); } catch {}
-  $("#topic").value = ""; $("#notes").value = ""; $("#refrm").click(); $("#scene-rm").click(); await load(); showProgress(r.id);
+  $("#topic").value = ""; $("#notes").value = ""; $("#script").value = ""; setIdeaTab("idea"); $("#refrm").click(); $("#scene-rm").click();
+  if (!jobs.some(j => j.id === r.id)) jobs.unshift(r);
+  openKit(r.id); load();
 }
 $("#go").onclick = create;
 $("#topic").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); create(); } };
-document.querySelectorAll(".idea").forEach(b => b.onclick = () => { const rail=b.parentElement; if(rail.scrollWidth>rail.clientWidth) rail.scrollTo({left:rail.scrollLeft+b.getBoundingClientRect().left-rail.getBoundingClientRect().left,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"}); $("#topic").value = b.textContent; $("#topic").focus({preventScroll:true}); });
-
-// грубый процент готовности по этапу
-function pct(p = "") {
-  const m = p.match(/(\d+)\/(\d+)/), n = m ? m[1] / m[2] : 0, k = p.match(/монтаж (\d+)%/);
-  if (p.startsWith("озвучка")) return 8 + 12 * n;
-  if (p.startsWith("картинки")) return 20 + 15 * n;
-  if (p.startsWith("анимация")) return 35 + 35 * n;
-  if (k) return 72 + 0.22 * k[1];
-  if (/обложка|архив/.test(p)) return 96;
-  if (/сценарий готов|повтор/.test(p)) return 7;
-  return 3;
-}
+document.querySelectorAll(".idea").forEach(b => b.onclick = () => { $("#topic").value = b.textContent; $("#topic").focus({preventScroll:true}); });
 
 let jobs = [];
-let loadingJobs = false;
+let loadingJobs = false, reloadJobs = false;
 let lastJobsMarkup = "";
-// Единая загрузка истории; защита от параллельных запросов при событиях воркера.
+/*
+ * Единая загрузка истории. Событие, пришедшее во время запроса, не теряется:
+ * после ответа история перезапрашивается, иначе последний статус «застревал».
+ * Процент и этап (percent, stage) считает сервер — они переживают смену вкладок и перезагрузку.
+ */
 async function load() {
-  if (loadingJobs) return;
+  if (loadingJobs) { reloadJobs = true; return; }
   loadingJobs = true;
-  const r = await fetch("/api/jobs").then(r => r.json()).catch(() => null);
-  loadingJobs = false;
-  if (!Array.isArray(r)) return;
-  jobs = r;
-  renderHistory();
-  if (typeof refreshProgress === "function") refreshProgress();
+  try {
+    do {
+      reloadJobs = false;
+      const r = await fetch("/api/jobs").then(r => r.json()).catch(() => null);
+      if (!Array.isArray(r)) continue;
+      jobs = r;
+      renderHistory();
+      refreshKit();
+    } while (reloadJobs);
+  } finally { loadingJobs = false; }
 }
 let historyVisible=48;
 const STATUS_LABELS = {done:"Готово", draft:"Сценарий", queued:"В очереди", running:"Создаётся", cancelling:"Останавливается", cancelled:"Остановлено", error:"Ошибка"};
@@ -301,18 +325,23 @@ function renderHistory() {
   $("#history-more").hidden=filtered.length<=historyVisible;
   if (!filtered.length) { lastJobsMarkup = ""; $("#grid").innerHTML = `<div class="empty"><b>${jobs.length?"Нет роликов под этим фильтром":"Здесь появятся ваши ролики"}</b><span>${jobs.length?"Измените поиск или фильтр":"Опишите идею выше и нажмите «Создать ролик»"}</span></div>`; return; }
   const markup = filtered.slice(0,historyVisible).map(j => {
-    const f = `/files/${j.id}/`, done = j.status === "done";
+    const f = `/files/${j.id}/`, done = j.status === "done", active = ACTIVE.includes(j.status);
+    const has = name => (j.files || []).includes(name), percent = j.percent ?? 0;
     const price = j.cost && j.cost.total>0 ? (j.accounting==="pending"?"≥ ":"")+money(j.cost.total) : "≈"+money(j.estimate?.total);
     const L = OPT?.langs?.[j.lang || "ru"] || "RU";
     const sub = j.deleted_at ? "Восстановить из корзины" : done ? `${L} · ${j.format === "vertical" ? "9:16" : "16:9"} · ${j.minutes} мин`
-              : j.status === "draft" ? "Сценарий готов — проверить" : j.status === "error" ? "Ошибка — посмотреть подробности" : j.status === "queued" ? "В очереди" : j.status === "cancelled" ? "Остановлено — можно продолжить" : esc(j.progress);
+              : j.status === "draft" ? "Сценарий готов — проверить" : j.status === "error" ? "Ошибка — посмотреть подробности" : j.status === "cancelled" ? "Остановлено — можно продолжить" : `<b>${percent}%</b> · ${esc(j.stage || "В очереди")}`;
+    const preview = has("cover.jpg") ? `<img src="${f}cover.jpg" alt="" loading="lazy" decoding="async">` : "";
+    const downloads = [["video.mp4","MP4","видео"],["cover.jpg","JPG","обложку"],["all-texts.txt","TXT","тексты"]].filter(([name]) => has(name))
+      .map(([name,label,what]) => `<a href="${f}${name}?download=1" download title="Скачать ${what}">${label}</a>`).join("");
     return `<article class="item ${esc(j.status)} ${j.format === "horizontal" ? "h" : ""}" data-job="${esc(j.id)}" tabindex="0">
-      <span class="thumb">${done ? `<img src="${f}cover.jpg" alt="" loading="lazy" decoding="async">` : ""}
-        ${["running","queued","cancelling"].includes(j.status) ? '<span class="spin"></span>' : ""}
+      <span class="thumb"${has("cover.jpg") && j.format === "horizontal" ? ` style="--cover:url('${f}cover.jpg')"` : ""}>${preview}
+        ${active ? `<span class="spin"><b>${percent}%</b></span>` : ""}
         <span class="badge">${j.deleted_at ? "Корзина" : STATUS_LABELS[j.status] || ""}</span>
-        <span class="price">${price}</span>${done ? `<span class="quick-downloads"><a href="${f}video.mp4?download=1" download title="Скачать видео">MP4</a><a href="${f}cover.jpg?download=1" download title="Скачать обложку">JPG</a><a href="${f}all-texts.txt?download=1" download title="Скачать тексты">TXT</a></span>` : ""}</span>
+        <span class="price">${price}</span>${done && downloads ? `<span class="quick-downloads">${downloads}</span>` : ""}</span>
       <span class="meta"><span class="t">${esc(j.title || j.topic)}</span><span class="s">${sub}</span>
-        ${j.status === "running" ? `<span class="prog"><i style="width:${pct(j.progress)}%"></i></span>` : ""}</span></article>`;
+        ${active ? `<span class="prog"><i style="width:${percent}%"></i></span>` : ""}
+        ${active || j.deleted_at ? "" : `<button type="button" class="card-delete" data-delete="${esc(j.id)}" aria-label="Удалить ролик" title="Удалить"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg></button>`}</span></article>`;
   }).join("");
   if (markup !== lastJobsMarkup) {
     $("#grid").innerHTML = markup;
@@ -320,103 +349,27 @@ function renderHistory() {
   }
 }
 
-$("#grid").onclick = e => { if (e.target.closest(".quick-downloads")) return; const item = e.target.closest("[data-job]"); if (item) openJob(item.dataset.job); };
+$("#grid").onclick = e => {
+  if (e.target.closest(".quick-downloads")) return;
+  const remove = e.target.closest("[data-delete]");
+  if (remove) return deleteJob(remove.dataset.delete);
+  const item = e.target.closest("[data-job]");
+  if (item) openJob(item.dataset.job);
+};
 $("#grid").onkeydown = e => { if ((e.key==="Enter" || e.key===" ") && e.target.matches("[data-job]")) { e.preventDefault(); openJob(e.target.dataset.job); } };
-$("#close-dialog").onclick = () => dlg.close();
 
-let cur = null;
-let openingJob = 0;
+// Черновик открывает редактор сценария, остальные статусы — окно комплекта.
 async function openJob(id) {
   const j = jobs.find(x => x.id === id);
   if (!j) return;
   if (j.deleted_at) { await postJob(j.id,"restore",{}); return load(); }
   if (j.status==="draft") return openScript(j);
-  if (["queued","running","cancelling"].includes(j.status)) return showProgress(id);
-  if (["error","cancelled"].includes(j.status)) {
-    retryJob = j.id;
-    $("#retry-title").textContent = "Повторить создание?";
-    $("#retry-go").textContent = "Повторить";
-    $("#retry-error").textContent = j.progress || "Не удалось создать ролик";
-    $("#retry-note").textContent = "Повтор использует оставшийся бюджет. Готовые материалы и этапы используются повторно.";
-    $("#retry-dialog").showModal();
-    return;
-  }
-  if (j.status !== "done") return;
-  const opening = ++openingJob;
-  cur = j; const f = `/files/${id}/`;
-  $("#dialog-status").textContent = "";
-  $("#dt").textContent = j.title || j.topic;
-  $("#vid").src = f + "video.mp4"; $("#vid").poster = f + "cover.jpg"; $("#cover-preview").src=f+"cover.jpg";
-  $("#dzip").href = f + "result.zip?download=1"; $("#dvid").href = f + "video.mp4?download=1"; $("#dcov").href = f + "cover.jpg?download=1";
-  $("#dcov-vertical").href=f+"cover-vertical.jpg?download=1"; $("#dcov-youtube").href=f+"cover-youtube.jpg?download=1"; $("#dcov-square").href=f+"cover-square.jpg?download=1";
-  $("#download-text").href=f+"all-texts.txt?download=1";
-  $("#dsrt").hidden = !j.files?.includes("subtitles.srt");
-  $("#dsrt").href = f + "subtitles.srt";
-  $("#dass").hidden=!j.files?.includes("subtitles.ass"); $("#dass").href=f+"subtitles.ass";
-  $("#dcost").innerHTML=j.cost?`Стоимость <b>${j.accounting==="pending"?"≥ ":""}${money(j.cost.total)}</b>${j.accounting==="pending"?" · уточняется":""}`:"Стоимость уточняется";
-  if (j.budget_status) $("#dcost").innerHTML+=` · Остаток лимита <b>${money(j.budget_status.remaining)}</b>`;
-  $("#dinfo").textContent = `${j.format === "vertical" ? "9:16" : "16:9"} · ${j.minutes} мин`;
-  const result = await fetch(f + "social.json").then(r => r.ok ? r.json() : null).catch(() => null);
-  if (opening !== openingJob) return;
-  social = result;
-  tab("youtube");
-  if (!dlg.open) dlg.showModal();
+  openKit(id);
 }
-dlg.addEventListener("close", () => { $("#vid").pause(); $("#vid").removeAttribute("src"); $("#vid").load(); });
-dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
-
-let social = null;
-const ICON_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
-const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
-let selectedTab = 0;
-async function tab(name) {
-  const requestId = ++selectedTab;
-  const jobId = cur.id;
-  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.f === name));
-  $("#download-network").href=`/files/${cur.id}/${name}.txt?download=1`;
-  const fields = social?.[name] || {"Текст": await fetch(`/files/${cur.id}/${name}.txt`).then(r => r.text()).catch(() => "")};
-  if (requestId !== selectedTab || cur.id !== jobId) return;
-  $("#dialog-status").textContent = "";
-  $("#fields").innerHTML = Object.entries(fields).map(([k, v], i) =>
-    `<div class="field"><div class="fh"><span>${esc(k)}</span><button class="copy" data-i="${i}" title="Копировать">${ICON_COPY}</button></div><div class="fv">${esc(v)}</div></div>`).join("");
-  const vals = Object.values(fields);
-  $("#fields").querySelectorAll(".copy").forEach(b => b.onclick = async () => {
-    try { await navigator.clipboard.writeText(vals[b.dataset.i]); }
-    catch {
-      const value = String(vals[b.dataset.i]);
-      const input = document.createElement("textarea");
-      input.value = value;
-      input.readOnly = true;
-      input.style.cssText = "position:fixed;left:0;top:0;opacity:0;font-size:16px";
-      dlg.append(input);
-      let copied = false;
-      try { input.focus(); input.select(); input.setSelectionRange(0, value.length); copied = document.execCommand("copy"); }
-      catch { /* A browser may allow only manual selection. */ }
-      input.remove();
-      b.focus({preventScroll:true});
-      if (!copied) {
-        const range = document.createRange();
-        range.selectNodeContents(b.closest(".field").querySelector(".fv"));
-        const selection = window.getSelection();
-        selection.removeAllRanges(); selection.addRange(range);
-        $("#dialog-status").textContent = "Текст выделен. Нажмите и удерживайте его, затем выберите «Копировать».";
-        return;
-      }
-    }
-    b.innerHTML = ICON_OK; b.classList.add("ok");
-    setTimeout(() => { b.innerHTML = ICON_COPY; b.classList.remove("ok"); }, 1200);
-  });
-}
-document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => tab(b.dataset.f));
-$("#copy-all").onclick=async()=>{ const fields=social?.[document.querySelector("#tabs .on")?.dataset.f]||{}; await copyText(Object.values(fields).join("\n\n")); $("#dialog-status").textContent="Описание скопировано"; };
-$("#copy-cover").onclick=async()=>{ try { const image=$("#cover-preview"), canvas=document.createElement("canvas"); canvas.width=image.naturalWidth; canvas.height=image.naturalHeight; canvas.getContext("2d").drawImage(image,0,0); const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png")); await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]); $("#dialog-status").textContent="Картинка скопирована"; } catch { $("#dialog-status").textContent="На этом устройстве картинку нельзя скопировать — скачайте JPG"; } };
-
-$("#voice-speed").oninput=()=>$("#voice-speed-value").textContent=(+$("#voice-speed").value).toFixed(2)+"×";
 
 document.querySelectorAll("[data-worktab]").forEach(button=>button.onclick=()=>{
   document.querySelectorAll("[data-worktab]").forEach(x=>{x.classList.toggle("active",x===button); if(x===button) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current");});
   const target=button.dataset.worktab;
-  $("#progress-page").hidden=true;
   $("#project-history").hidden=target!=="history";
   $("#create").hidden=target==="history";
   $(".modes").hidden=target!=="create";
@@ -427,30 +380,18 @@ document.querySelectorAll("[data-worktab]").forEach(button=>button.onclick=()=>{
   window.scrollTo({top:0,behavior:"smooth"});
 });
 
-let jobEvents;
+// События воркера приходят пачками (каждый шаг сцены), поэтому история перезапрашивается не чаще раза в 1.5 с.
+let jobEvents, loadTimer = null;
+const scheduleLoad = () => { loadTimer ??= setTimeout(() => { loadTimer = null; load(); }, 1500); };
 function connectJobEvents() {
   jobEvents?.close();
-  load();
   if (document.hidden) return;
-  if (window.EventSource) { jobEvents=new EventSource("/api/events"); jobEvents.onmessage=()=>load(); }
+  load();
+  if (window.EventSource) { jobEvents=new EventSource("/api/events"); jobEvents.onmessage=scheduleLoad; }
 }
 document.addEventListener("visibilitychange",connectJobEvents);
-setInterval(()=>{if (!document.hidden) { balance(); if (!window.EventSource) load(); }},60000);
+setInterval(()=>{if (!document.hidden) { balance(); if (!window.EventSource) load(); }},300000);
 
-let retryJob = null;
-$("#retry-cancel").onclick = () => $("#retry-dialog").close();
-$("#retry-go").onclick = async () => {
-  if (!retryJob || $("#retry-go").disabled) return;
-  $("#retry-go").disabled = true;
-  try {
-    const response = await fetch(`/api/jobs/${retryJob}/retry`, {method:"POST"});
-    const result = await response.json();
-    if (!response.ok || result.error) throw new Error(result.error || "Не удалось повторить");
-    $("#retry-dialog").close();
-    await load();
-  } catch (error) { $("#retry-error").textContent = error.message; }
-  finally { $("#retry-go").disabled = false; }
-};
 
 
 
@@ -485,6 +426,7 @@ function setupCustomChoices() {
  document.querySelectorAll('[name=style],[name=genre]').forEach(input=>input.addEventListener('change',sync)); sync();
 }
 
+// Скрытый <select> остаётся источником значения для формы и localStorage, кнопки — визуальный слой.
 function syncChoiceButtons(select) {
   const group=select.parentElement.querySelector(":scope > .choice-group");
   if (!group) return;
@@ -494,19 +436,26 @@ function syncChoiceButtons(select) {
     button.disabled=!!option?.disabled;
   });
 }
-/*
- * Скрытый <select> остаётся источником значения для формы и localStorage,
- * а кнопки — только визуальный слой. В React это controlled ChoiceGroup.
- */
+// Особые виды кнопок: флаг у языка, превью у стиля, цена отдельной строкой у модели анимации.
+const CHOICE_CONTENT = {
+  langs: option => `<svg class="flag" aria-hidden="true"><use href="#flag-${esc(option.value)}"/></svg>${esc(option.textContent)}`,
+  styles: option => (option.value === "custom" ? `<span class="style-custom"><svg aria-hidden="true"><use href="#i-plus"/></svg></span>` : `<img src="/img/styles/${esc(option.value)}.webp" alt="" loading="lazy" decoding="async">`) + esc(option.textContent),
+  vmodels: option => { const [name, price] = option.textContent.split("|"); return `${esc(name)}<small>${esc(price)}</small>`; },
+};
+const CHOICE_MIN = {langs: "8.5rem", styles: "7.5rem", vmodels: "10rem", genres: "8rem", "history-status": "6.5rem"};
 function setupChoiceButtons() {
-  const ids=["langs","genres","tones","narrators","endings","audiences","styles","vmodels","providers","genders","subtitle-preset","subtitle-outline-mode","subtitle-timing"];
+  const ids=["langs","genres","tones","narrators","endings","audiences","styles","vmodels","providers","genders","subtitle-preset","subtitle-outline-mode","subtitle-timing","history-status"];
+  const labels={"subtitle-preset":"Палитра","subtitle-outline-mode":"Цвет обводки","subtitle-timing":"Синхронизация","history-status":"Фильтр роликов"};
   ids.forEach(id=>{
-    const select=document.getElementById(id); let container=select.parentElement;
-    if(container.tagName==="LABEL") { const div=document.createElement("div"); div.className=container.className; while(container.firstChild) div.append(container.firstChild); container.replaceWith(div); container=div; }
-    const label=container.querySelector("span")?.textContent || ({"subtitle-preset":"Палитра","subtitle-outline-mode":"Цвет обводки","subtitle-timing":"Синхронизация"})[id] || id;
-    const group=document.createElement("div"); group.className="choice-group"; group.setAttribute("role","group"); group.setAttribute("aria-label",label);
+    const select=document.getElementById(id);
+    const group=document.createElement("div");
+    group.className="choice-group"+(id==="styles"?" style-grid":"");
+    group.setAttribute("role","group"); group.setAttribute("aria-label",labels[id]||select.parentElement.querySelector(":scope > span")?.textContent||id);
+    if (CHOICE_MIN[id]) group.style.setProperty("--seg-min",CHOICE_MIN[id]);
     for(const option of select.options) {
-      const button=document.createElement("button"); button.type="button"; button.dataset.value=option.value; button.textContent=option.textContent;
+      const button=document.createElement("button"); button.type="button"; button.dataset.value=option.value;
+      button.innerHTML=CHOICE_CONTENT[id]?.(option) ?? esc(option.textContent);
+      if (id==="vmodels") button.style.flexDirection="column";
       button.onclick=()=>{ if(select.value===option.value) return; select.value=option.value; select.dispatchEvent(new Event("input",{bubbles:true})); select.dispatchEvent(new Event("change",{bubbles:true})); syncChoiceButtons(select); };
       group.append(button);
     }
@@ -514,6 +463,9 @@ function setupChoiceButtons() {
     select.addEventListener("change",()=>syncChoiceButtons(select)); syncChoiceButtons(select);
   });
 }
+
+// На телефоне план ролика — нижняя панель; «Состав» раскрывает подробности.
+$("#summary-toggle").onclick=()=>{ const open=$("#checkout").classList.toggle("open"); $("#summary-toggle").setAttribute("aria-expanded",String(open)); };
 
 function syncKeyboardPanel() {
   const field=document.activeElement;
@@ -524,16 +476,3 @@ function syncKeyboardPanel() {
 window.visualViewport?.addEventListener("resize",syncKeyboardPanel);
 document.addEventListener("focusin",syncKeyboardPanel);
 document.addEventListener("focusout",()=>setTimeout(syncKeyboardPanel,0));
-
-// Добавляет числовое поле рядом с range: удобно на телефоне и при точной настройке.
-function setupPreciseRanges() {
-  document.querySelectorAll(".subtitle-range input[type=range], #voice-speed").forEach(range=>{
-    if (range.dataset.precise) return; range.dataset.precise="true";
-    const number=document.createElement("input"); number.type="number"; number.className="range-precise";
-    number.min=range.min; number.max=range.max; number.step=range.step||"1"; number.value=range.value;
-    number.setAttribute("aria-label", (range.closest("label")?.textContent.trim()||"Значение") + " — точное значение");
-    range.insertAdjacentElement("afterend",number);
-    range.addEventListener("input",()=>{number.value=range.value;});
-    number.addEventListener("change",()=>{ let value=Number(number.value); if(!Number.isFinite(value)) value=Number(range.value); range.value=Math.min(Number(range.max),Math.max(Number(range.min),value)); number.value=range.value; range.dispatchEvent(new Event("input",{bubbles:true})); range.dispatchEvent(new Event("change",{bubbles:true})); });
-  });
-}

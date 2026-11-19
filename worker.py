@@ -121,6 +121,7 @@ def process(store, job):
                             ("max_price", None),
                             ("clips", None),
                             ("subtitles", None),
+                            ("script", ""),
                         ]
                     },
                     script_only=job.get("review", False)
@@ -163,6 +164,7 @@ def process(store, job):
         )
         try:
             reconcile(store, store.get(jid))
+            store.discard_unpaid(jid)
         except Exception:
             LOG.exception("Accounting refresh deferred for %s", jid)
 
@@ -209,6 +211,8 @@ def run(root: Path, stop=None):
                                     reconcile(store, item)
                                 except Exception:
                                     LOG.exception("Accounting postponed")
+                            if item.get("status") == "cancelled":
+                                store.discard_unpaid(item["id"])
                         last_accounting = time.monotonic()
                     else:
                         stop.wait(0.5)

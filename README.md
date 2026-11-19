@@ -13,8 +13,12 @@ manage.py          резервные копии и обслуживание
 factory/           сценарий, голос, картинки, анимация, монтаж, бюджет
 web/               интерфейс
   index.html       разметка
-  css/app.css      единая дизайн-система
+  css/tokens.css   дизайн-токены: цвета, скругления, высоты, отступы, шрифты, анимации
+  css/components.css  кнопки, поля, сегменты, слайдеры, свотчи, карточки выбора
+  css/app.css      раскладка страниц и блоков (только токены — проверяет tests/test_design.py)
   js/*.js          клиентские скрипты
+  data/topics.json библиотека тем ИИ-помощника (python manage.py topics)
+  img/             превью стилей и подложки превью субтитров (python manage.py assets)
   voices/          пробы голосов
 deploy/            установка на Ubuntu: install-vps.sh, systemd, nginx, HTTPS
 tests/             проверки без платных запросов: python tests/run.py

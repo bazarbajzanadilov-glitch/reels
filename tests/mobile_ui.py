@@ -161,12 +161,15 @@ def main() -> int:
             assert_layout(width, "субтитры")
 
         def check_progress(width: int) -> None:
-            page.evaluate("showProgress('fixture')")
+            page.evaluate("openKit('fixture')")
             page.wait_for_timeout(200)
             assert_layout(width, "прогресс")
-            tap(page.locator("#progress-review"))
+            tap(page.locator('#kit [data-kit="script"]'))
             page.wait_for_timeout(200)
             assert_layout(width, "редактор")
+            render = page.locator("#script-render").bounding_box()
+            if not render or render["y"] + render["height"] > page.viewport_size["height"]:
+                errors.append(f"{width} «Собрать видео» не видна без прокрутки")
             page.locator("#script-close").click()
             page.wait_for_timeout(100)
             page.evaluate(
@@ -175,10 +178,10 @@ def main() -> int:
                     openJob('fixture');
                 }"""
             )
-            page.locator("#dlg").wait_for(state="visible")
+            page.locator("#kit").wait_for(state="visible")
             page.wait_for_timeout(150)
             assert_layout(width, "результат")
-            page.locator("#close-dialog").click()
+            page.locator("#kit-close").click()
             page.evaluate("jobs[0].status = 'draft'")
             create_tab()
 
