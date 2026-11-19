@@ -1,7 +1,7 @@
 "use strict";
 
 const $ = s => document.querySelector(s);
-const val = n => document.querySelector(`input[name=${n}]:checked`).value;
+const val = n => (document.querySelector(`input[name=${n}]:checked`) || document.querySelector(`select[name=${n}]`))?.value;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money = x => "$" + Number(x || 0).toFixed(2);
 const dlg = $("#dlg");
@@ -10,85 +10,80 @@ let OPT = null;
 const mins = () => +$("#minutes").value;
 const FLAGS = {ru: "🇷🇺", kk: "🇰🇿", en: "🇬🇧", de: "🇩🇪"};
 const LANG_NAMES = {ru: "Русский", kk: "Қазақша", en: "English", de: "Deutsch"};
-const STYLE_NOTES = {"2d": "Плоская векторная графика", "3d": "Объём, как в мультфильмах Pixar", anime: "Японская анимация",
-  real: "Как настоящее фото", comic: "Чёткие контуры, яркие цвета", watercolor: "Мягкие краски на бумаге",
-  clay: "Пластилиновые герои", pixel: "Ретро-игры, пиксели", noir: "Чёрно-белое кино, тени",
-  paper: "Аппликация из бумаги", custom: "Опишите сами"};
+const STYLE_NOTES = {"2d": "плоская векторная графика", "3d": "объём, как у Pixar", anime: "японская анимация",
+  real: "как настоящее фото", comic: "чёткие контуры", watercolor: "мягкие краски",
+  clay: "пластилиновые герои", pixel: "ретро-игры", noir: "чёрно-белое кино",
+  paper: "аппликация из бумаги", custom: "опишите сами"};
+
+// журнал: короткие строки о том, что происходит
+function journal(text) {
+  const list = $("#log"); if (!list) return;
+  const time = new Date().toLocaleTimeString("ru-RU", {hour: "2-digit", minute: "2-digit", second: "2-digit"});
+  if (list.firstElementChild?.dataset.text === text) return;
+  list.insertAdjacentHTML("afterbegin", `<li data-text="${esc(text)}"><time>${time}</time>${esc(text)}</li>`);
+  while (list.children.length > 8) list.lastElementChild.remove();
+}
 
 function setMins(m) {
-  $("#minutes").value = m; $("#mval").textContent = m + " мин";
-  document.querySelectorAll(".chip[data-m]").forEach(c => c.classList.toggle("on", +c.dataset.m === m));
+  m = Math.min(15, Math.max(1, Math.round(+m || 1)));
+  $("#minutes").value = m;
   if (OPT) estimate();
 }
-const radio = (name, v, checked) => `<input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${v === checked ? "checked" : ""}>`;
-const seg = (id, name, items, checked) => $(id).innerHTML = Object.entries(items).map(([v, l]) =>
-  `${radio(name, v, checked)}<label for="${name}-${v}">${l}</label>`).join("");
-// плитки: [значение, содержимое] → радио + оформленная метка
-const tiles = (id, name, entries, checked, cls) => $(id).innerHTML = entries.map(([v, body]) =>
-  `${radio(name, v, checked)}<label class="tile ${cls}" for="${name}-${v}">${body}</label>`).join("");
+// выпадающий список: [значение, подпись]
+const opts = (id, entries, checked) => { const el = $(id);
+  el.innerHTML = entries.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+  el.value = checked; };
+const labelOf = x => typeof x === "string" ? x : x?.label || "";
+// кнопки − / + у числовых полей
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-step]"); if (!b) return;
+  const input = $(b.dataset.step), next = Math.min(+input.max || Infinity, Math.max(+input.min || 0, (+input.value || 0) + +b.dataset.d));
+  input.value = next; input.dispatchEvent(new Event("input", {bubbles: true}));
+});
 
 function voices() {
   const p = OPT.voices[val("provider")], list = p[val("gender")];
-  $("#voice").innerHTML = list.map(v => `<option value="${v}" ${v === p.default ? "selected" : ""}>${v}</option>`).join("");
-  if (!list.includes($("#voice").value)) $("#voice").value = list[0];
-  // один клик по голосу: выбрать и сразу прослушать; повторный клик по играющему — остановить
-  $("#voice-list").innerHTML = list.map(v => `<button type="button" class="voice" data-voice="${esc(v)}" role="radio" aria-checked="false">
-    <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><b>${esc(v[0].toUpperCase() + v.slice(1))}</b></button>`).join("");
-  syncVoices();
+  const current = $("#voice").value;
+  $("#voice").innerHTML = list.map(v => `<option value="${esc(v)}">${esc(v[0].toUpperCase() + v.slice(1))}</option>`).join("");
+  $("#voice").value = list.includes(current) ? current : list.includes(p.default) ? p.default : list[0];
 }
-function syncVoices() {
-  document.querySelectorAll("#voice-list .voice").forEach(el => {
-    const on = el.dataset.voice === $("#voice").value;
-    el.classList.toggle("on", on); el.setAttribute("aria-checked", String(on));
-  });
-}
-$("#voice-list").onclick = e => {
-  const tile = e.target.closest(".voice"); if (!tile) return;
-  if ($("#voice").value !== tile.dataset.voice) {
-    $("#voice").value = tile.dataset.voice;
-    $("#voice").dispatchEvent(new Event("change", {bubbles: true}));
-  }
-  playVoice(tile.dataset.voice, tile);
-};
+// смена голоса = выбор + проба; ▶ — прослушать ещё раз / остановить
+$("#voice").onchange = () => { summary(); playVoice($("#voice").value, $("#voice-play"), true); };
+$("#voice-play").onclick = () => playVoice($("#voice").value, $("#voice-play"));
 
 async function init() {
   OPT = await fetch("/api/options").then(r => r.json());
   if (OPT.word_timing) { $("#subtitle-word-option").disabled = false; $("#subtitle-word-option").textContent = "По словам"; }
-  tiles("#langs", "lang", Object.keys(OPT.langs).map(k =>
-    [k, `<span class="flag">${FLAGS[k] || ""}</span><b>${OPT.langs[k]}</b><small>${LANG_NAMES[k] || ""}</small>`]), "ru", "tile-lang");
-  tiles("#genres", "genre", Object.entries(OPT.genres).map(([k, l]) =>
-    [k, `<b>${esc(l)}</b>`]), "auto", "tile-text");
-  seg("#tones", "tone", OPT.tones, "auto");
-  tiles("#styles", "style", Object.entries(OPT.styles).map(([k, l]) =>
-    [k, `<b>${esc(l.replace(" мультфильм", ""))}</b><small>${STYLE_NOTES[k] || ""}</small>`]), "2d", "tile-style");
-  tiles("#vmodels", "vmodel", Object.entries(OPT.video_models).map(([k, v]) =>
-    [k, `<span class="dot"></span><b>${esc(v.label)}</b><small>${esc(v.note)}</small><em>${money(v.price)} <i>за сцену</i></em>`]), "pvideo", "row-option");
+  opts("#langs", Object.keys(OPT.langs).map(k => [k, `${FLAGS[k] || ""} ${LANG_NAMES[k] || OPT.langs[k]}`]), "ru");
+  opts("#genres", Object.entries(OPT.genres).map(([k, l]) => [k, labelOf(l)]), "auto");
+  opts("#tones", Object.entries(OPT.tones).map(([k, l]) => [k, labelOf(l)]), "auto");
+  opts("#styles", Object.entries(OPT.styles).map(([k, l]) => [k, `${labelOf(l).replace(" мультфильм", "")} — ${STYLE_NOTES[k] || ""}`]), "2d");
+  opts("#vmodels", Object.entries(OPT.video_models).map(([k, v]) => [k, `${v.label} · ${money(v.price)} за сцену`]), "pvideo");
+  opts("#narrators", Object.entries(OPT.narrators).map(([k, l]) => [k, labelOf(l)]), "auto");
+  opts("#endings", Object.entries(OPT.endings).map(([k, l]) => [k, labelOf(l)]), "auto");
+  opts("#audiences", Object.entries(OPT.audiences).map(([k, l]) => [k, labelOf(l)]), "all");
+  opts("#providers", Object.entries(OPT.voices).map(([k, v]) => [k, v.label]), "gemini");
+  opts("#genders", [["male", "Мужской"], ["female", "Женский"]], "male");
   let priceTimer;
-  $("#maxprice").oninput = () => { clearTimeout(priceTimer); priceTimer = setTimeout(estimate, 300); };
-  $("#clips").oninput = () => { clipsTouched = true; $("#clips-value").textContent = `${$("#clips").value} из ${$("#clips").max}`;
-    clearTimeout(priceTimer); priceTimer = setTimeout(estimate, 200); };
+  const later = (ms = 250) => { clearTimeout(priceTimer); priceTimer = setTimeout(estimate, ms); };
+  $("#maxprice").oninput = () => later(300);
+  $("#clips").oninput = () => { clipsTouched = true; later(); };
   $("#clips-reset").onclick = () => { clipsTouched = false; estimate(); };
-  seg("#narrators", "narrator", OPT.narrators, "auto");
-  seg("#endings", "ending", OPT.endings, "auto");
-  seg("#audiences", "audience", OPT.audiences, "all");
+  $("#minutes").oninput = () => { clearTimeout(priceTimer); priceTimer = setTimeout(() => setMins($("#minutes").value), 250); };
   $("#morebtn").onclick = () => { const o = $("#extra").classList.toggle("open");
     $("#morebtn").setAttribute("aria-expanded", String(o));
     $("#morebtn").textContent = o ? "Скрыть настройки сюжета ▴" : "Ещё настройки сюжета ▾"; };
-  seg("#providers", "provider", Object.fromEntries(Object.entries(OPT.voices).map(([k, v]) => [k, v.label])), "gemini");
-  seg("#genders", "gender", {male: "Мужские", female: "Женские"}, "male");
-  $("#minutes").oninput = () => setMins(mins());
-  document.querySelectorAll(".chip[data-m]").forEach(c => c.onclick = () => setMins(+c.dataset.m));
   voices();
-  document.querySelectorAll(".panel input[type=radio]").forEach(i => i.onchange = () => {
+  document.querySelectorAll(".panel input[type=radio], .panel select[name]").forEach(i => i.addEventListener("change", () => {
     if (["provider", "gender", "lang"].includes(i.name)) stopAudio();
     if (i.name === "provider" || i.name === "gender") voices();
-    estimate(); });
+    estimate(); }));
   restorePreferences();
-  syncVoices();
   setMins(mins());
   setupStudio();
   setupCustomChoices();
   $("#go").disabled = false;
+  journal("Студия готова к работе");
   await estimate();
 }
 
@@ -121,6 +116,10 @@ async function estimate() {
     $("#est").textContent = "≈ " + money(r.total);
     $("#price-big").textContent = "≈ " + money(r.total);
     $("#scene-summary").innerHTML = `<span><b>${r.scenes}</b>сцен</span><span><b>${r.clips || 0}</b>с анимацией</span>`;
+    const parts = r.parts || {}, detail = {"картинки": `${r.scenes} кадров`, "анимация": `${r.clips || 0} сцен`, "голос": $("#voice").value};
+    $("#plan").innerHTML = Object.entries(parts).map(([k, v]) =>
+      `<li><span>${esc(k[0].toUpperCase() + k.slice(1))}${detail[k] ? `<small>${esc(detail[k])}</small>` : ""}</span><b>${money(v)}</b></li>`).join("");
+    journal(`Расчёт: ${mins()} мин · ${r.scenes} сцен · ${r.clips || 0} с анимацией · ≈ ${money(r.total)}`);
     showClips(r);
     $("#note").textContent = "Списывается по факту";
   } catch (error) {
@@ -134,10 +133,11 @@ async function estimate() {
 // сколько сцен оживить: по умолчанию 4 на минуту в пределах стандартного лимита, ползунком — любое число
 let clipsTouched = false;
 function showClips(r) {
-  const slider = $("#clips"), want = clipsTouched ? r.wanted : r.clips;
-  slider.max = Math.max(1, r.scenes);
-  slider.value = Math.max(1, want);
-  $("#clips-value").textContent = `${r.clips} из ${r.scenes}`;
+  if (val("animate") === "none") return;  // без анимации число сцен не трогаем
+  const field = $("#clips"), want = clipsTouched ? r.wanted : r.clips;
+  field.max = Math.max(1, r.scenes);
+  field.value = Math.max(1, want);
+  $("#clips-value").textContent = `из ${r.scenes}`;
   $("#clips-reset").hidden = !clipsTouched;
   const max = +$("#maxprice").value;
   $("#maxprice").placeholder = "авто · " + r.budget.toFixed(2);
@@ -146,9 +146,9 @@ function showClips(r) {
     $("#clips-note").innerHTML = `В лимит $${max.toFixed(2)} помещается ${r.clips} из ${r.wanted}. <button type="button" class="link" id="raise">Поднять лимит до $${need.toFixed(2)}</button>`;
     $("#raise").onclick = () => { $("#maxprice").value = need.toFixed(2); $("#maxprice").dispatchEvent(new Event("change", {bubbles: true})); estimate(); };
   } else if (r.capped) {
-    $("#clips-note").textContent = `В стандартный лимит $${r.budget.toFixed(2)} помещается ${r.clips}. Сдвиньте ползунок — лимит поднимется.`;
+    $("#clips-note").textContent = `В стандартный лимит $${r.budget.toFixed(2)} помещается ${r.clips}. Нажмите +, и лимит поднимется.`;
   } else {
-    $("#clips-note").textContent = clipsTouched ? `Лимит подстроен: до $${r.budget.toFixed(2)}.` : "По умолчанию 4 на минуту ролика.";
+    $("#clips-note").textContent = clipsTouched ? `Лимит подстроен: до $${r.budget.toFixed(2)}.` : "По умолчанию 4 анимированные сцены на минуту.";
   }
 }
 
@@ -159,10 +159,11 @@ function stopAudio() {
   if (audioButton) audioButton.classList.remove("busy", "playing");
   audioButton = null;
 }
-async function playVoice(name, button) {
+async function playVoice(name, button, restart = false) {
   const same = audioButton === button;
   stopAudio();
-  if (same) return;
+  if (same && !restart) return;
+  journal(`Проба голоса: ${name}`);
   audioButton = button;
   button.classList.add("busy", "playing");
   const sample = audio = new Audio(`/voices/${val("provider")}/${name}_${val("lang")}.mp3`);
@@ -170,7 +171,6 @@ async function playVoice(name, button) {
   sample.onended = sample.onerror = () => { if (audio === sample) stopAudio(); };
   try { await sample.play(); } catch { if (audio === sample) stopAudio(); }
 }
-$("#voice").onchange = () => { syncVoices(); summary(); };
 
 async function balance() {
   const r = await fetch("/api/balance").then(r => r.json()).catch(() => ({}));
@@ -245,13 +245,14 @@ async function create() {
     if (!response.ok && !r.error) r={error:"Не удалось создать ролик"};
   } catch { r={error:"Нет связи с сервером. Повторная отправка сохранит ту же задачу."}; }
   $("#go").disabled = false;
-  if (r.error) { $("#err").textContent = r.error; return; }
+  if (r.error) { $("#err").textContent = r.error; journal("Ошибка: " + r.error); return; }
+  journal(`Задача создана: «${topic}»`);
   creationKey.pending=null;
   try { sessionStorage.removeItem("factory.pending"); } catch {}
   $("#topic").value = ""; $("#notes").value = ""; $("#refrm").click(); $("#scene-rm").click(); load();
 }
 $("#go").onclick = create;
-$("#topic").onkeydown = e => { if (e.key === "Enter") create(); };
+$("#topic").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); create(); } };
 document.querySelectorAll(".idea").forEach(b => b.onclick = () => { $("#topic").value = b.textContent; $("#topic").focus(); });
 
 // грубый процент готовности по этапу
@@ -275,6 +276,11 @@ async function load() {
   const r = await fetch("/api/jobs").then(r => r.json()).catch(() => null);
   loadingJobs = false;
   if (!Array.isArray(r)) return;
+  for (const j of r) {
+    const old = jobs.find(x => x.id === j.id);
+    if (old && (old.status !== j.status || old.progress !== j.progress) && !j.deleted_at)
+      journal(`«${j.title || j.topic}»: ${STATUS_LABELS[j.status] || j.status}${j.status === "running" && j.progress ? " · " + j.progress : ""}`);
+  }
   jobs = r;
   renderHistory();
 }
@@ -427,7 +433,8 @@ function setupStudio() {
     $('#project-history').hidden=mode==='music'; $('#video-workspace').hidden=mode==='music'; $('#music-workspace').hidden=mode!=='music'; $('#checkout').hidden=mode==='music';
     if (mode==='music') return;
     if (change) { const input=$('#'+(mode==='none'?'a0':'a2')); input.checked=true; input.dispatchEvent(new Event('change',{bubbles:true})); }
-    $('#animation-settings').classList.toggle('no-animation',mode==='none');
+    $('#animation-settings').hidden=mode==='none'; $('#clips-field').hidden=mode==='none'; $('.clips-hint').hidden=mode==='none';
+    journal(mode==='none'?'Режим: без анимации':'Режим: с анимацией');
   }
   tabs.forEach(b=>b.onclick=()=>choose(b.dataset.project));
   document.querySelectorAll('input[name=animate]').forEach(i=>i.addEventListener('change',()=>choose(val('animate')==='none'?'none':'animated',false)));
