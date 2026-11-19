@@ -163,8 +163,20 @@ class Handler(BaseHTTPRequestHandler):
                 raise
             raise InvalidRequest("Некорректный JSON-запрос") from None
 
+    def _client_ip(self) -> str:
+        """Настоящий IP посетителя. За nginx (BEHIND_PROXY=1) все запросы приходят с 127.0.0.1 —
+        тогда берём X-Real-IP, который выставляет наш nginx; иначе все делили бы один лимит."""
+        peer = self.client_address[0]
+        if env("BEHIND_PROXY") == "1" and ipaddress.ip_address(peer).is_loopback:
+            real = (self.headers.get("X-Real-IP") or "").strip()
+            try:
+                return str(ipaddress.ip_address(real))
+            except ValueError:
+                pass
+        return peer
+
     def _limited(self, group, limit):
-        if RATE.allow((self.client_address[0], group), limit):
+        if RATE.allow((self._client_ip(), group), limit):
             return False
         self.send_response(429)
         self.send_header("Retry-After", "60")
