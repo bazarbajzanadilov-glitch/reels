@@ -9,7 +9,8 @@ APP=/opt/reels
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq git ffmpeg fonts-dejavu-core python3-venv nginx certbot python3-certbot-nginx >/dev/null
+# ставим только недостающее: уже установленные пакеты (nginx других сайтов) не обновляем
+apt-get install -y -qq --no-upgrade git ffmpeg fonts-dejavu-core python3-venv nginx certbot python3-certbot-nginx >/dev/null
 
 id reels >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/nologin reels
 [ -d "$APP/.git" ] || git clone -q https://github.com/bazarbajzanadilov-glitch/reels.git "$APP"
