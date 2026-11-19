@@ -11,9 +11,9 @@ API = "https://gen.pollinations.ai"
 
 FPS = 30
 # Параллельные запросы к API (у Pollinations лимит ~60 запросов/мин на модель)
-NET_TTS = min(16, max(1, int(os.environ.get("NET_TTS", "8"))))
-NET_IMAGES = min(16, max(1, int(os.environ.get("NET_IMAGES", "6"))))
-NET_VIDEO = min(16, max(1, int(os.environ.get("NET_VIDEO", "8"))))
+NET_TTS = min(16, max(1, int(os.environ.get("NET_TTS", "4"))))
+NET_IMAGES = min(16, max(1, int(os.environ.get("NET_IMAGES", "3"))))
+NET_VIDEO = min(16, max(1, int(os.environ.get("NET_VIDEO", "3"))))
 # Форматы: размер видео и размер генерируемых картинок
 FORMATS = {
     "vertical": {

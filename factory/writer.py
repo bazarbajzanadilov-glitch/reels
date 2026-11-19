@@ -239,7 +239,7 @@ def write(
             return cached(f"part-{a}-{b}", lambda: _retry(once, f"сцены {a + 1}–{b}"))
 
         with ThreadPoolExecutor(
-            len(ranges)
+            min(4, len(ranges))
         ) as ex:  # части по плану независимы — пишем параллельно
             data["scenes"] = [s for chunk in ex.map(part, ranges) for s in chunk]
     data["lang"] = lang

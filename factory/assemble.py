@@ -150,10 +150,13 @@ def assemble(
     seed = seed_of(data)
     sc = data["scenes"]
     n = len(sc)
+    log("этап:images:running")
+    log("этап:voice:running")
     st = STYLES.get(data.get("style_key", "2d"), STYLES["2d"])
     if animate == "key" and st.get("camera_fly"):
         animate = "all"  # 3D — полёты камеры во всех сценах, сколько позволяет бюджет
     chosen = set(pick_clips(sc, animate, n if clip_limit is None else clip_limit))
+    log("этап:animation:running" if chosen else "этап:animation:skipped")
     if animate != "none":
         log(f"анимация: {len(chosen)} из {n} сцен")
     motion = {
@@ -248,6 +251,7 @@ def assemble(
             speed=data.get("voice_speed", 1.0),
         )
         scenes, voice_parts, sfx_events, total = _timeline(sc, voices)
+        log("этап:voice:done")
         subtitle_options = subtitles.normalize(data.get("subtitles"))
         if subtitle_options.get("timing") == "words" and not data.get("subtitle_cues"):
             alignment.align(
@@ -282,6 +286,7 @@ def assemble(
             scene["cancel_path"] = str(CURRENT.get().cancel_path or "")
             scene["run_id"] = CURRENT.get().run_id
 
+        log("этап:render:running")
         chunks = render.split(scenes, total, FPS)
         files = [str(tmp / f"part{k:03d}.mp4") for k in range(len(chunks))]
         started, futs = set(), []
@@ -334,6 +339,7 @@ def assemble(
         if audio_f is not None:
             audio_f.result()
         render.concat(files, str(audio), str(out))
+        log("этап:render:done")
     finally:
         # Drain producers before consumers: images may submit video tasks.
         # No credential scope or temporary files disappear while a task still uses them.

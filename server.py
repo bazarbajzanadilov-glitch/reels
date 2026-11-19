@@ -285,6 +285,7 @@ class Handler(BaseHTTPRequestHandler):
                     "subtitle-controls",
                     "job-editor",
                     "preferences",
+                    "progress",
                     "bootstrap",
                 )
             },

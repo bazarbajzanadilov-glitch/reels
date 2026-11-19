@@ -76,7 +76,7 @@ def process(store, job):
     cancel = store.root / jid / ".cancelled"
     run_id = uuid.uuid4().hex
     atomic_bytes(store.root / jid / ".run-id", run_id.encode())
-    store.patch(jid, run_id=run_id)
+    store.patch(jid, run_id=run_id, stages={})
 
     def log(message):
         store.progress(jid, message)
@@ -140,6 +140,10 @@ def process(store, job):
         store.patch(jid, status="cancelled", progress="остановлено")
     except Exception as error:
         LOG.exception("Job %s failed", jid)
+        stages = store.get(jid).get("stages", {})
+        for stage, value in stages.items():
+            if value.get("state") == "running":
+                store.progress(jid, f"этап:{stage}:error")
         store.patch(jid, status="error", progress=f"Ошибка: {error}")
     finally:
         store.patch(

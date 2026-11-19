@@ -32,6 +32,7 @@ function journal(text) {
 function setMins(m) {
   m = Math.min(15, Math.max(1, Math.round(+m || 1)));
   $("#minutes").value = m;
+  $("#minutes-range").value = m;
   if (OPT) estimate();
 }
 // выпадающий список: [значение, подпись]
@@ -73,6 +74,11 @@ async function init() {
   const later = (ms = 250) => { clearTimeout(priceTimer); priceTimer = setTimeout(estimate, ms); };
   $("#maxprice").oninput = () => later(300);
   $("#clips").oninput = () => { clipsTouched = true; later(); };
+  for (const name of ["minutes", "clips"]) {
+    const number = $("#"+name), range = $("#"+name+"-range");
+    range.oninput = () => { number.value=range.value; number.dispatchEvent(new Event("input", {bubbles:true})); };
+    number.addEventListener("input", () => { range.value=number.value; });
+  }
   $("#clips-reset").onclick = () => { clipsTouched = false; estimate(); };
   $("#minutes").oninput = () => { clearTimeout(priceTimer); priceTimer = setTimeout(() => setMins($("#minutes").value), 250); };
   $("#morebtn").onclick = () => { const o = $("#extra").classList.toggle("open");
@@ -87,6 +93,7 @@ async function init() {
   setMins(mins());
   setupStudio();
   setupCustomChoices();
+  setupPreciseRanges();
   $("#go").disabled = false;
   journal("Студия готова к работе");
   await estimate();
@@ -142,6 +149,7 @@ function showClips(r) {
   const field = $("#clips"), want = clipsTouched ? r.wanted : r.clips;
   field.max = Math.max(1, r.scenes);
   field.value = Math.max(1, want);
+  $("#clips-range").max = field.max; $("#clips-range").value = field.value;
   $("#clips-value").textContent = `из ${r.scenes}`;
   $("#clips-reset").hidden = !clipsTouched;
   const max = +$("#maxprice").value;
@@ -255,7 +263,7 @@ async function create() {
   journal(`Задача создана: «${topic}»`);
   creationKey.pending=null;
   try { sessionStorage.removeItem("factory.pending"); } catch {}
-  $("#topic").value = ""; $("#notes").value = ""; $("#refrm").click(); $("#scene-rm").click(); load();
+  $("#topic").value = ""; $("#notes").value = ""; $("#refrm").click(); $("#scene-rm").click(); await load(); showProgress(r.id);
 }
 $("#go").onclick = create;
 $("#topic").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); create(); } };
@@ -290,6 +298,7 @@ async function load() {
   jobs = r;
   renderHistory();
   updateDock();
+  if (typeof refreshProgress === "function") refreshProgress();
 }
 let historyVisible=48;
 const STATUS_LABELS = {done:"Готово", draft:"Сценарий", queued:"В очереди", running:"Создаётся", cancelling:"Останавливается", cancelled:"Остановлено", error:"Ошибка"};
@@ -322,6 +331,7 @@ function renderHistory() {
 }
 
 $("#grid").onclick = e => { if (e.target.closest(".quick-downloads")) return; const item = e.target.closest("[data-job]"); if (item) openJob(item.dataset.job); };
+$("#grid").onkeydown = e => { if ((e.key==="Enter" || e.key===" ") && e.target.matches("[data-job]")) { e.preventDefault(); openJob(e.target.dataset.job); } };
 $("#close-dialog").onclick = () => dlg.close();
 
 let cur = null;
@@ -332,6 +342,7 @@ async function openJob(id) {
   if (j.deleted_at) { await postJob(j.id,"restore",{}); return load(); }
   if (j.status==="draft") return openScript(j);
   if (["error","cancelled","queued","running","cancelling"].includes(j.status)) {
+    if (["queued","running","cancelling"].includes(j.status)) return showProgress(id);
     retryJob = j.id;
     retryAction=["queued","running","cancelling"].includes(j.status)?"cancel":"retry";
     $("#retry-title").textContent=retryAction==="cancel"?"Остановить создание?":"Повторить создание?";
@@ -435,6 +446,7 @@ async function updateDock() {
 document.querySelectorAll("[data-worktab]").forEach(button=>button.onclick=()=>{
   document.querySelectorAll("[data-worktab]").forEach(x=>{x.classList.toggle("active",x===button); if(x===button) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current");});
   const target=activeWorktab=button.dataset.worktab;
+  $("#progress-page").hidden=true;
   $("#project-history").hidden=target!=="history";
   $("#create").hidden=target==="history";
   $(".modes").hidden=target!=="create";
@@ -477,7 +489,7 @@ function setupStudio() {
   const tabs=[...document.querySelectorAll('[data-project]')];
   function choose(mode, change=true) {
     tabs.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.project===mode)));
-    $('#project-history').hidden=mode==='music'; $('#video-workspace').hidden=mode==='music'; $('#music-workspace').hidden=mode!=='music'; $('#checkout').hidden=mode==='music';
+    $('#project-history').hidden=true; $('#video-workspace').hidden=mode==='music'; $('#music-workspace').hidden=mode!=='music'; $('#checkout').hidden=mode==='music';
     if (mode==='music') return;
     if (change) { const input=$('#'+(mode==='none'?'a0':'a2')); input.checked=true; input.dispatchEvent(new Event('change',{bubbles:true})); }
     $('#animation-settings').hidden=mode==='none'; $('#clips-field').hidden=mode==='none'; $('.clips-hint').hidden=mode==='none';
@@ -495,4 +507,16 @@ function setupStudio() {
 function setupCustomChoices() {
  const sync=()=>{ $('#custom-style-field').hidden=val('style')!=='custom'; $('#custom-genre-field').hidden=val('genre')!=='custom'; };
  document.querySelectorAll('[name=style],[name=genre]').forEach(input=>input.addEventListener('change',sync)); sync();
+}
+
+function setupPreciseRanges() {
+  document.querySelectorAll(".subtitle-range input[type=range], #voice-speed").forEach(range=>{
+    if (range.dataset.precise) return; range.dataset.precise="true";
+    const number=document.createElement("input"); number.type="number"; number.className="range-precise";
+    number.min=range.min; number.max=range.max; number.step=range.step||"1"; number.value=range.value;
+    number.setAttribute("aria-label", (range.closest("label")?.textContent.trim()||"Значение") + " — точное значение");
+    range.insertAdjacentElement("afterend",number);
+    range.addEventListener("input",()=>{number.value=range.value;});
+    number.addEventListener("change",()=>{ let value=Number(number.value); if(!Number.isFinite(value)) value=Number(range.value); range.value=Math.min(Number(range.max),Math.max(Number(range.min),value)); number.value=range.value; range.dispatchEvent(new Event("input",{bubbles:true})); range.dispatchEvent(new Event("change",{bubbles:true})); });
+  });
 }

@@ -37,6 +37,20 @@ def script():
 
 
 class WorkflowTests(unittest.TestCase):
+    def test_parallel_stage_progress_is_preserved(self):
+        from factory.store import JobStore
+        with tempfile.TemporaryDirectory() as directory:
+            store = JobStore(Path(directory))
+            store.put({"id": "test", "topic": "test", "status": "running", "created": "2026-01-01"})
+            store.progress("test", "этап:voice:running")
+            store.progress("test", "этап:images:running")
+            store.progress("test", "озвучка 2/4")
+            store.progress("test", "картинки 4/4")
+            job = store.get("test")
+            self.assertEqual(job["stages"]["voice"], {"state": "running", "completed": 2, "total": 4})
+            self.assertEqual(job["stages"]["images"]["state"], "done")
+            self.assertEqual(job["progress"], "картинки 4/4")
+
     def test_review_does_not_generate_images_or_video(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "job"

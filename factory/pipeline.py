@@ -67,6 +67,7 @@ def run(
     with budget.limit(out_dir, cap, prior_spent):
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        log("этап:script:running")
         script = out_dir / "script.json"
         if script.exists():  # повтор после ошибки: сценарий уже есть, голос/картинки/клипы возьмутся из кэша
             data = json.loads(script.read_text(encoding="utf-8"))
@@ -120,6 +121,7 @@ def run(
         data["video_model"] = video_model
         data["subtitles"] = subtitle_tools.normalize(subtitles)
         atomic_json(script, data)
+        log("этап:script:done")
 
         if script_only:
             return {"title": data.get("title", topic), "files": [], "draft": True}
@@ -172,6 +174,7 @@ def run(
         )
 
         def cover_step():
+            log("этап:cover:running")
             if completed.get("cover") != cover_key or not valid_image(
                 out_dir / "cover.jpg"
             ):
@@ -185,6 +188,7 @@ def run(
                     data.get("reference_url"),
                     data.get("channel_name", ""),
                 )
+            log("этап:cover:done")
 
         with ThreadPoolExecutor(1) as ex:
             cover = ex.submit(cover_step)
@@ -192,6 +196,9 @@ def run(
                 out_dir / "video.mp4"
             ):
                 log("повтор: использую готовый монтаж")
+                for stage in ("voice", "images", "render"):
+                    log(f"этап:{stage}:done")
+                log("этап:animation:skipped" if animate == "none" else "этап:animation:done")
                 out_video = out_dir / "video.mp4"
             else:
                 out_video = assemble(
@@ -208,6 +215,7 @@ def run(
             completed["cover"] = cover_key
             atomic_json(checkpoint, completed)
 
+        log("этап:texts:running")
         social = writer.social(data)
         (out_dir / "social.json").write_text(
             json.dumps(social, ensure_ascii=False, indent=1), encoding="utf-8"
@@ -221,6 +229,7 @@ def run(
                 f"{label.upper()}:\n{value}" for label, value in fields.items()
             ))
         (out_dir / "all-texts.txt").write_text("\n\n".join(all_texts) + "\n", encoding="utf-8")
+        log("этап:texts:done")
 
         # Useful crops are made locally from the finished cover, without another generation.
         from PIL import Image, ImageOps

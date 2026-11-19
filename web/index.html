@@ -10,6 +10,7 @@
 <script src="/subtitle-controls.js" defer></script>
 <script src="/job-editor.js" defer></script>
 <script src="/preferences.js" defer></script>
+<script src="/progress.js" defer></script>
 <script src="/bootstrap.js" defer></script>
 </head>
 <body>
@@ -42,10 +43,9 @@
           <section class="pane" aria-labelledby="h-idea">
             <header class="pane-head">
               <h2 id="h-idea">Новый ролик</h2>
-              <p>Опишите идею — студия сама напишет сценарий, озвучит, нарисует кадры, оживит сцены, наложит субтитры и подготовит обложку и тексты для соцсетей.</p>
             </header>
 
-            <label class="field-label" for="topic">О чём видео <small>ситуация, герой, место</small></label>
+            <label class="field-label" for="topic">Идея ролика</label>
             <div class="topic-box"><textarea id="topic" rows="3" maxlength="200" placeholder="Например: мальчик нашёл дверь в другой мир у себя в шкафу" autocomplete="off"></textarea></div>
             <div class="ideas" aria-label="Примеры идей"><button type="button" class="idea">Как выжить в пустыне без воды</button><button type="button" class="idea">Тайна заброшенного маяка</button><button type="button" class="idea">5 фактов о космосе</button></div>
 
@@ -59,9 +59,9 @@
             </div>
             <div class="row">
               <div class="field"><span>Длина ролика</span>
-                <div class="stepper"><button type="button" data-step="#minutes" data-d="-1" aria-label="Меньше">−</button><input type="number" id="minutes" min="1" max="15" step="1" value="1" aria-label="Длительность в минутах"><em id="mval">мин</em><button type="button" data-step="#minutes" data-d="1" aria-label="Больше">+</button></div></div>
+                <div class="range-number"><input type="range" id="minutes-range" min="1" max="15" step="1" value="1" aria-label="Длительность в минутах"><input type="number" id="minutes" min="1" max="15" step="1" value="1" aria-label="Точная длительность в минутах"><em id="mval">мин</em></div></div>
               <div class="field" id="clips-field"><span>Анимированных сцен</span>
-                <div class="stepper"><button type="button" data-step="#clips" data-d="-1" aria-label="Меньше">−</button><input type="number" id="clips" min="1" max="10" step="1" value="4" aria-label="Сколько сцен оживить"><em id="clips-value">из 10</em><button type="button" data-step="#clips" data-d="1" aria-label="Больше">+</button></div></div>
+                <div class="range-number"><input type="range" id="clips-range" min="1" max="10" step="1" value="4" aria-label="Анимированных сцен"><input type="number" id="clips" min="1" max="10" step="1" value="4" aria-label="Точное число анимированных сцен"><em id="clips-value">из 10</em></div></div>
             </div>
             <p class="hint clips-hint"><span id="clips-note">По умолчанию 4 анимированные сцены на минуту.</span> <button type="button" class="link" id="clips-reset" hidden>Вернуть по умолчанию</button></p>
           </section>
@@ -121,7 +121,6 @@
               <div class="field"><span>Голос диктора</span>
                 <div class="voice-pick-row"><select id="voice" aria-label="Голос диктора"></select><button type="button" class="play" id="voice-play" aria-label="Прослушать голос"><svg><use href="#i-play"/></svg></button></div></div>
             </div>
-            <p class="hint">Смена голоса сразу включает пробу.</p>
             <div class="row voice-extras">
               <label class="field range-field"><span>Темп голоса <output id="voice-speed-value">1.00×</output></span><input id="voice-speed" type="range" min="0.75" max="1.25" step="0.05" value="1"></label>
               <label class="field"><span>Название канала для заставки</span><input id="channel-name" maxlength="80" placeholder="Например: NBS SOFT"></label>
@@ -205,6 +204,12 @@
         </div>
       </aside>
     </div>
+  </section>
+
+  <section id="progress-page" class="progress-page" hidden aria-live="polite">
+    <div class="progress-heading"><div><span class="eyebrow">ВАШ РОЛИК</span><h2 id="progress-title"></h2><p id="progress-message"></p><p id="progress-estimate"></p></div><button class="btn" type="button" id="progress-back">К настройкам</button></div>
+    <div class="progress-layout"><div class="progress-main"><div id="progress-stages" class="progress-stages"></div><div class="progress-text-card"><div class="progress-card-head"><h3>Тексты для публикации</h3><span>4 соцсети</span></div><div id="progress-texts" class="progress-texts"><p>Появятся после создания сценария</p></div></div></div>
+    <div class="progress-assets"><div class="asset-card"><h3>Видео</h3><div id="progress-video" class="asset-placeholder"><span class="asset-spinner"></span><span>Ожидает монтажа</span></div></div><div class="asset-card"><h3>Обложка</h3><div id="progress-cover" class="asset-placeholder"><span class="asset-spinner"></span><span>Ожидает создания</span></div></div><button type="button" id="progress-open" class="btn main" hidden>Открыть готовый комплект</button><button type="button" id="progress-review" class="btn main" hidden>Проверить сценарий</button><button type="button" id="progress-retry" class="btn" hidden>Подробнее</button></div></div>
   </section>
 
   <section id="project-history" class="history">

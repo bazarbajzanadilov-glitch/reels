@@ -7,6 +7,7 @@ import logging
 import sqlite3
 import time
 import uuid
+import re
 from contextlib import contextmanager
 from pathlib import Path
 from .files import atomic_json, atomic_bytes, path_lock
@@ -213,7 +214,21 @@ class JobStore:
                 return
             job = json.loads(row["payload"])
             job["progress"] = str(message)[:1000]
-            job["log"] = [*job.get("log", []), str(message)[:1000]][-200:]
+            stages = job.setdefault("stages", {})
+            match = re.match(r"этап:(script|voice|images|animation|render|cover|texts):(waiting|running|done|skipped|error)(?::(\d+)/(\d+))?", str(message))
+            if match:
+                stage, state, completed, total = match.groups()
+                stages[stage] = {"state": state, "completed": int(completed or 0), "total": int(total or 0)}
+            else:
+                match = re.match(r"(озвучка|картинки|анимация)\s+(\d+)/(\d+)", str(message))
+                if match:
+                    stage = {"озвучка": "voice", "картинки": "images", "анимация": "animation"}[match.group(1)]
+                    done, total = int(match.group(2)), int(match.group(3))
+                    stages[stage] = {"state": "done" if done >= total else "running", "completed": done, "total": total}
+            if str(message).startswith("этап:"):
+                job["progress"] = job.get("log", ["в работе"])[-1] if job.get("log") else "в работе"
+            else:
+                job["log"] = [*job.get("log", []), str(message)[:1000]][-200:]
             db.execute(
                 "UPDATE jobs SET payload=?,updated=? WHERE id=?",
                 (json.dumps(job, ensure_ascii=False), time.time(), jid),
