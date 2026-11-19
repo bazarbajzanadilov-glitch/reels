@@ -124,6 +124,9 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(chat.reply("claude", [{"role": "user", "content": "идеи"}]), "- Идея один")
         self.assertEqual(sent[0]["model"], chat.MODELS["claude"]["model"])
         self.assertEqual(sent[0]["messages"][0]["role"], "system")
+        self.assertLessEqual(sent[0]["max_tokens"], 1000)
+        for item in chat.MODELS.values():  # в чате только дешёвые модели
+            self.assertFalse(any(word in item["model"] for word in ("sol", "fable", "opus", "sonnet", "astra")))
 
     def test_customer_script_reaches_the_writer_prompt(self):
         from factory import writer

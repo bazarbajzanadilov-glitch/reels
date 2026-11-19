@@ -8,12 +8,14 @@ import json
 from .config import API, key
 from .http import request
 
+# Только дешёвые модели: переписка стоит доли цента. Дорогие (Sol, Fable, Opus, Sonnet) сюда не ставить.
 MODELS = {
-    "gpt": {"label": "GPT", "model": "openai/gpt-5.6-luna"},
-    "claude": {"label": "Claude", "model": "anthropic/claude-sonnet-5"},
+    "gpt": {"label": "GPT", "model": "openai/gpt-6-luna"},
+    "claude": {"label": "Claude", "model": "anthropic/claude-haiku-5.5"},
 }
-MAX_MESSAGES = 30
-MAX_CHARS = 4000
+MAX_MESSAGES = 12  # в модель уходит только конец переписки — длинный чат не дорожает
+MAX_CHARS = 2000
+MAX_TOKENS = 700  # длина ответа
 
 SYSTEM = """Ты креативный продюсер коротких вирусных роликов (TikTok, YouTube Shorts, Instagram Reels, YouTube).
 Помогаешь автору придумать идею ролика: задаёшь уточняющие вопросы, если запрос размытый, и предлагаешь идеи.
@@ -49,6 +51,8 @@ def reply(model: str, messages) -> str:
     payload = {
         "model": MODELS[model]["model"],
         "messages": [{"role": "system", "content": SYSTEM}, *clean_messages(messages)],
+        "max_tokens": MAX_TOKENS,
+        "reasoning_effort": "low",
     }
     raw = request(
         f"{API}/v1/chat/completions",
