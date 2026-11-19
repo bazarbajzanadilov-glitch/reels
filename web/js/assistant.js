@@ -24,7 +24,8 @@ function messageHtml(text) {
   const flush = () => { if (para.length) { blocks.push(`<p>${para.map(l => esc(l.replace(/\*\*/g, ""))).join("<br>")}</p>`); para = []; } };
   for (const line of String(text).split(/\r?\n/)) {
     const m = line.match(IDEA_LINE);
-    if (m && plainIdea(m[1])) {
+    // вопросы и строки «Формат: …» — не идеи, остаются текстом
+    if (m && plainIdea(m[1]) && !/\?\s*$/.test(m[1]) && !/^[^:]{1,25}:\s/.test(plainIdea(m[1]))) {
       flush();
       if (!list) { list = []; blocks.push(list); }
       list.push(plainIdea(m[1]));
